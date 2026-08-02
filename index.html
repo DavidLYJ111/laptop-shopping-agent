@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InsightFlow 竞析｜可溯源的智能竞品分析 Agent</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-soft: #f8f9fd;
+      --text: #172033;
+      --muted: #667085;
+      --line: #e7eaf1;
+      --blue: #5367db;
+      --blue-dark: #3f52c1;
+      --purple: #7b61c9;
+      --blue-soft: #eef1ff;
+      --green: #1f9d72;
+      --amber: #c27a19;
+      --red: #c94f5d;
+      --shadow: 0 8px 28px rgba(31, 40, 73, .07);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      height: 62px;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; font-size: 17px; letter-spacing: -.2px; }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 10px; position: relative;
+      background: linear-gradient(145deg, #5367db, #7763c3); box-shadow: 0 5px 14px rgba(83,103,219,.22);
+    }
+    .brand-mark::before, .brand-mark::after { content: ""; position: absolute; border: 2px solid white; border-radius: 50%; }
+    .brand-mark::before { width: 13px; height: 13px; left: 8px; top: 7px; }
+    .brand-mark::after { width: 5px; height: 5px; right: 7px; bottom: 7px; background: white; }
+    .brand span { color: var(--blue); margin-left: 3px; font-weight: 650; }
+    .nav { display: flex; gap: 8px; align-items: center; }
+    .nav-btn {
+      border: 0; background: transparent; color: #525d73; padding: 8px 13px; border-radius: 8px;
+    }
+    .nav-btn:hover, .nav-btn.active { color: var(--blue); background: var(--blue-soft); }
+    .user-dot { width: 31px; height: 31px; border-radius: 50%; background: #ebeef8; color: var(--blue); display: grid; place-items: center; font-weight: 700; margin-left: 8px; }
+
+    .shell { max-width: 1440px; margin: 0 auto; display: grid; grid-template-columns: 238px minmax(0,1fr); min-height: calc(100vh - 62px); }
+    .sidebar { border-right: 1px solid var(--line); padding: 28px 20px; background: #fafbfe; }
+    .side-title { font-size: 12px; color: #98a0b2; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 18px 10px; }
+    .step { display: flex; gap: 12px; padding: 11px 10px; border-radius: 10px; position: relative; transition: .25s ease; }
+    .step:not(:last-child)::after { content: ""; position: absolute; left: 24px; top: 44px; width: 1px; height: 20px; background: #dfe3ee; }
+    .step-index { flex: 0 0 auto; width: 29px; height: 29px; border-radius: 9px; border: 1px solid #dce1ec; color: #8a93a7; display: grid; place-items: center; font-size: 12px; font-weight: 700; background: white; }
+    .step-name { font-weight: 650; font-size: 13px; margin-top: 1px; }
+    .step-desc { color: #929bad; font-size: 11px; margin-top: 1px; white-space: nowrap; }
+    .step.active { background: #f0f2ff; }
+    .step.active .step-index { background: var(--blue); border-color: var(--blue); color: white; }
+    .step.active .step-name { color: var(--blue-dark); }
+    .step.done .step-index { color: white; background: var(--green); border-color: var(--green); }
+    .side-note { margin-top: 34px; padding: 14px; border: 1px solid #e3e6f2; background: white; border-radius: 12px; color: var(--muted); font-size: 12px; }
+    .side-note strong { display: block; color: #3d4860; margin-bottom: 5px; }
+
+    main { min-width: 0; padding: 28px 34px 48px; }
+    .view { display: none; animation: viewIn .3s ease; }
+    .view.active { display: block; }
+    @keyframes viewIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+    .eyebrow { color: var(--blue); font-weight: 700; font-size: 12px; letter-spacing: .06em; margin-bottom: 5px; }
+    h1 { font-size: 26px; line-height: 1.25; margin: 0 0 7px; letter-spacing: -.6px; }
+    .subhead { color: var(--muted); margin: 0 0 22px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .form-card { padding: 23px 25px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 21px 26px; }
+    .full { grid-column: 1/-1; }
+    .field-label { display: flex; align-items: center; justify-content: space-between; font-weight: 680; margin-bottom: 9px; }
+    .field-label small { font-weight: 400; color: #98a0b2; }
+    .text-input { width: 100%; border: 1px solid #dfe3ec; border-radius: 9px; padding: 10px 12px; color: var(--text); outline: none; background: #fff; }
+    .text-input:focus { border-color: #8e9bea; box-shadow: 0 0 0 3px rgba(83,103,219,.1); }
+    .tags-box { min-height: 42px; border: 1px solid #dfe3ec; border-radius: 9px; padding: 5px 7px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .tags-box:focus-within { border-color: #8e9bea; box-shadow: 0 0 0 3px rgba(83,103,219,.1); }
+    .tag { background: var(--blue-soft); color: #4354b4; border-radius: 7px; padding: 4px 8px; display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+    .tag button { background: none; border: 0; padding: 0; color: #7e89c7; line-height: 1; }
+    #tagInput { min-width: 90px; flex: 1; border: 0; outline: 0; padding: 4px; }
+    .choice-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice span { display: inline-flex; align-items: center; border: 1px solid #e0e4ed; border-radius: 9px; padding: 8px 12px; color: #596478; background: #fff; transition: .18s; }
+    .choice span::before { content: ""; width: 14px; height: 14px; border: 1.5px solid #b8bfce; margin-right: 7px; border-radius: 50%; }
+    .choice.check span::before { border-radius: 4px; }
+    .choice input:checked + span { border-color: #8997e8; color: var(--blue-dark); background: #f4f5ff; }
+    .choice input:checked + span::before { border-color: var(--blue); box-shadow: inset 0 0 0 3px #f4f5ff; background: var(--blue); }
+    .choice.check input:checked + span::before { content: "✓"; color: white; box-shadow: none; font-size: 10px; display: grid; place-items: center; }
+    .actions { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 22px; }
+    .btn { border: 1px solid #dfe3ec; background: white; color: #475267; border-radius: 9px; padding: 10px 17px; font-weight: 650; transition: .18s; }
+    .btn:hover { transform: translateY(-1px); border-color: #bfc7dd; }
+    .btn.primary { background: var(--blue); color: white; border-color: var(--blue); box-shadow: 0 5px 14px rgba(83,103,219,.2); }
+    .btn.primary:hover { background: var(--blue-dark); }
+    .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .btn .arrow { margin-left: 8px; }
+
+    .confirm-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 16px; }
+    .confirm-card { padding: 20px 22px; }
+    .confirm-card h3, .section-head h2 { margin: 0; font-size: 16px; }
+    .confirm-card h3 { padding-bottom: 13px; border-bottom: 1px solid var(--line); }
+    .data-list { margin: 4px 0 0; }
+    .data-row { display: grid; grid-template-columns: 112px 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px dashed #e8eaf0; }
+    .data-row:last-child { border: 0; }
+    .data-row dt { color: var(--muted); }
+    .data-row dd { margin: 0; font-weight: 560; }
+    .mini-list { margin: 13px 0 0; padding: 0; list-style: none; color: #505b70; }
+    .mini-list li { padding: 6px 0 6px 21px; position: relative; }
+    .mini-list li::before { content: "✓"; color: var(--green); position: absolute; left: 0; font-weight: 800; }
+    .limit-box { background: #fffbf4; border: 1px solid #f4e3c5; border-radius: 10px; color: #775d34; padding: 11px 13px; margin-top: 15px; font-size: 12px; }
+
+    .run-layout { display: grid; grid-template-columns: minmax(0,1fr) 298px; gap: 18px; }
+    .process-card { padding: 23px 25px; }
+    .process-list { list-style: none; margin: 10px 0 0; padding: 0; }
+    .process-item { display: grid; grid-template-columns: 35px 1fr auto; gap: 13px; align-items: center; padding: 12px 0; position: relative; }
+    .process-item:not(:last-child)::after { content:""; position:absolute; left:17px; top:47px; height:19px; width:1px; background:#dfe3ec; }
+    .process-icon { width: 35px; height: 35px; display: grid; place-items: center; border: 1px solid #dfe3ec; border-radius: 10px; color: #99a1b2; background: white; font-weight: 750; z-index: 1; }
+    .process-name { font-weight: 650; }
+    .process-detail { font-size: 12px; color: #8b94a6; }
+    .process-status { color: #9aa2b2; font-size: 12px; }
+    .process-item.active .process-icon { color: var(--blue); border-color: #9ca7ec; background: var(--blue-soft); animation: pulse 1.3s infinite; }
+    .process-item.active .process-status { color: var(--blue); }
+    .process-item.done .process-icon { color: white; border-color: var(--green); background: var(--green); }
+    .process-item.done .process-status { color: var(--green); }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(83,103,219,.10); } }
+    .bar-wrap { height: 8px; background: #edf0f5; border-radius: 99px; overflow: hidden; margin: 18px 0 7px; }
+    .bar { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #5367db, #7865c5); transition: width .5s ease; }
+    .bar-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+    .stats-card { padding: 20px; }
+    .stats-card h3 { margin: 0 0 14px; font-size: 15px; }
+    .stat { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .stat:last-child { border: 0; }
+    .stat-label { color: var(--muted); }
+    .stat-value { font-size: 20px; font-weight: 750; }
+    .stat-value.warn { color: var(--amber); }
+    .stat-value.risk { color: var(--red); }
+    .source-note { margin-top: 16px; padding: 12px; border-radius: 10px; background: #f7f8fc; color: #687286; font-size: 12px; }
+
+    .report-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 18px; }
+    .report-actions { display: flex; gap: 8px; }
+    .report-section { margin-bottom: 16px; }
+    .report-section.card { padding: 21px 23px; }
+    .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .section-kicker { color: #98a0b1; font-size: 12px; }
+    .summary-grid { display: grid; grid-template-columns: 1.4fr .8fr; gap: 18px; }
+    .summary-main { font-size: 15px; line-height: 1.8; color: #39445a; margin: 0; }
+    .summary-score { background: #f5f6ff; border: 1px solid #e2e5fa; border-radius: 12px; padding: 15px; }
+    .score-num { font-size: 29px; font-weight: 800; color: var(--blue-dark); }
+    .score-label { color: var(--muted); font-size: 12px; }
+    .legend { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; padding: 4px 8px; font-size: 11px; font-weight: 650; }
+    .badge.fact { background: #e9f7f2; color: #187858; }
+    .badge.infer { background: #fff4df; color: #a36616; }
+    .badge.advice { background: #eeeefe; color: #5d52b5; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 11px; }
+    table { width: 100%; border-collapse: collapse; min-width: 770px; }
+    th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 11px 13px; }
+    th { background: #f8f9fc; color: #5d677a; font-size: 12px; font-weight: 680; }
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { font-weight: 650; }
+    .level-high { color: var(--green); font-weight: 700; }
+    .level-mid { color: var(--amber); font-weight: 650; }
+    .level-low { color: #8d96a8; }
+    .conclusion-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    .conclusion { border: 1px solid var(--line); border-radius: 11px; padding: 15px; background: #fbfcfe; }
+    .conclusion .num { color: #a4aabd; font-size: 11px; font-weight: 800; }
+    .conclusion h3 { margin: 8px 0 6px; font-size: 14px; }
+    .conclusion p { margin: 0; color: var(--muted); font-size: 12px; }
+    .opportunity { display: grid; grid-template-columns: 42px 1fr auto; gap: 13px; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .opportunity:last-child { border: 0; }
+    .opp-icon { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: #f0f2ff; color: var(--blue); font-size: 18px; }
+    .opp-title { font-weight: 680; }
+    .opp-desc { font-size: 12px; color: var(--muted); }
+    .priority { font-size: 11px; color: var(--purple); background: #f0edfa; border-radius: 99px; padding: 4px 8px; }
+    .audit-list { display: grid; gap: 9px; }
+    .audit-row { display: grid; grid-template-columns: minmax(260px,1.7fr) 86px 92px 80px minmax(130px,.7fr) 90px; gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 12px 13px; }
+    .audit-title { font-weight: 620; }
+    .audit-cell { color: var(--muted); font-size: 12px; }
+    .grade { display: inline-grid; place-items: center; width: 25px; height: 25px; border-radius: 7px; font-weight: 800; }
+    .grade.A { color:#137255; background:#e5f6ef; }.grade.B { color:#356bbb; background:#e9f1ff; }.grade.C { color:#a46a19; background:#fff2dc; }.grade.D { color:#b64b58; background:#fdebed; }.grade.E { color:#7e657f; background:#f2eaf2; }
+    .evidence-btn { border: 1px solid #d9deeb; color: var(--blue); background: white; border-radius: 8px; padding: 6px 9px; font-size: 12px; }
+    .evidence-btn:hover { background: var(--blue-soft); }
+
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(21,27,43,.38); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+    .modal-backdrop.open { display: flex; animation: fade .2s ease; }
+    @keyframes fade { from { opacity: 0; } }
+    .modal { background: white; width: min(650px, 96vw); max-height: 88vh; overflow: auto; border-radius: 16px; box-shadow: 0 24px 60px rgba(19,27,54,.22); animation: pop .2s ease; }
+    @keyframes pop { from { transform: scale(.98) translateY(8px); } }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; padding:18px 21px; border-bottom:1px solid var(--line); position: sticky; top: 0; background: white; z-index: 1; }
+    .modal-head h3 { margin:0; font-size:16px; }
+    .close { border:0; background:#f1f3f7; border-radius:8px; width:30px; height:30px; color:#677186; }
+    .modal-body { padding: 20px 21px; }
+    .modal-conclusion { padding: 12px 14px; border-radius: 10px; background: #f5f6ff; color: #3f4b73; margin-bottom: 15px; }
+    .evidence-source { border:1px solid var(--line); border-radius:11px; padding:14px; margin-top:10px; }
+    .source-title { font-weight:700; margin-bottom:8px; }
+    .source-meta { display:flex; flex-wrap:wrap; gap:7px 16px; font-size:12px; color:var(--muted); margin-bottom:10px; }
+    .quote { border-left:3px solid #8e9aea; background:#f8f9fc; padding:9px 11px; color:#485268; font-size:12px; }
+    .risk-note { margin-top: 10px; color:#8c6230; font-size:12px; }
+    .rules { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+    .rule { border:1px solid var(--line); border-radius:10px; padding:12px 8px; text-align:center; }
+    .rule p { margin:6px 0 0; color:var(--muted); font-size:11px; }
+    .history-item { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+    .history-item:last-child { border:0; }
+    .toast { position:fixed; left:50%; bottom:28px; transform:translate(-50%,20px); background:#202a41; color:white; padding:10px 15px; border-radius:9px; opacity:0; pointer-events:none; z-index:150; transition:.25s; box-shadow:0 8px 24px rgba(0,0,0,.18); }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      main { padding: 24px; }
+      .confirm-grid, .run-layout, .summary-grid { grid-template-columns: 1fr; }
+      .audit-row { grid-template-columns: minmax(220px,1fr) 72px 78px 64px 100px 86px; }
+    }
+    @media (max-width: 700px) {
+      .topbar { padding: 0 15px; }
+      .brand span, .user-dot { display:none; }
+      .nav { gap: 1px; }
+      .nav-btn { padding: 7px 8px; font-size: 12px; }
+      main { padding: 20px 14px 35px; }
+      .form-grid, .conclusion-grid { grid-template-columns:1fr; }
+      .full { grid-column:auto; }
+      .form-card { padding:18px; }
+      .report-top { flex-direction:column; }
+      .audit-list { overflow-x:auto; }
+      .audit-row { min-width:760px; }
+      .rules { grid-template-columns:repeat(2,1fr); }
+      h1 { font-size:22px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true"></div>InsightFlow <span>竞析</span></div>
+    <nav class="nav" aria-label="主导航">
+      <button class="nav-btn active" data-nav="new">新建分析</button>
+      <button class="nav-btn" data-nav="history">历史任务</button>
+      <button class="nav-btn" data-nav="rules">可信度规则</button>
+      <div class="user-dot">竞</div>
+    </nav>
+  </header>
+
+  <div class="shell">
+    <aside class="sidebar">
+      <p class="side-title">分析工作流</p>
+      <div id="sideSteps">
+        <div class="step active" data-step="1"><div class="step-index">1</div><div><div class="step-name">定义分析任务</div><div class="step-desc">明确范围与业务目标</div></div></div>
+        <div class="step" data-step="2"><div class="step-index">2</div><div><div class="step-name">确认调研计划</div><div class="step-desc">核对来源与交付结构</div></div></div>
+        <div class="step" data-step="3"><div class="step-index">3</div><div><div class="step-name">执行证据调研</div><div class="step-desc">搜集、清洗与审计</div></div></div>
+        <div class="step" data-step="4"><div class="step-index">4</div><div><div class="step-name">查看分析报告</div><div class="step-desc">结论与证据可追溯</div></div></div>
+      </div>
+      <div class="side-note"><strong>可信分析原则</strong>有引用不等于有可靠证据。InsightFlow 会区分已验证事实、合理推断与产品建议。</div>
+    </aside>
+
+    <main>
+      <!-- 状态一：创建任务 -->
+      <section id="view1" class="view active">
+        <div class="eyebrow">NEW ANALYSIS</div>
+        <h1>创建竞品分析任务</h1>
+        <p class="subhead">告诉我们你关注的产品与业务问题，Agent 将生成可审查的调研计划。</p>
+        <div class="card form-card">
+          <form id="analysisForm">
+            <div class="form-grid">
+              <div>
+                <label class="field-label" for="targetProduct">目标产品</label>
+                <input class="text-input" id="targetProduct" value="豆包" placeholder="输入目标产品名称" />
+              </div>
+              <div>
+                <label class="field-label">对比竞品 <small>回车添加</small></label>
+                <div class="tags-box" id="tagsBox"><input id="tagInput" placeholder="添加竞品" aria-label="添加竞品" /></div>
+              </div>
+              <div>
+                <div class="field-label">目标市场</div>
+                <div class="choice-row">
+                  <label class="choice"><input type="radio" name="market" value="C端" checked><span>C端</span></label>
+                  <label class="choice"><input type="radio" name="market" value="B端"><span>B端</span></label>
+                  <label class="choice"><input type="radio" name="market" value="混合市场"><span>混合市场</span></label>
+                </div>
+              </div>
+              <div>
+                <div class="field-label">分析目的</div>
+                <div class="choice-row">
+                  <label class="choice"><input type="radio" name="purpose" value="产品规划与立项" checked><span>产品规划与立项</span></label>
+                  <label class="choice"><input type="radio" name="purpose" value="产品优化迭代"><span>产品优化迭代</span></label>
+                  <label class="choice"><input type="radio" name="purpose" value="市场进入判断"><span>市场进入判断</span></label>
+                  <label class="choice"><input type="radio" name="purpose" value="营销与销售支持"><span>营销与销售支持</span></label>
+                </div>
+              </div>
+              <div class="full">
+                <div class="field-label">重点分析维度 <small>可多选</small></div>
+                <div class="choice-row" id="dimensionChoices">
+                  <label class="choice check"><input type="checkbox" value="产品定位" checked><span>产品定位</span></label>
+                  <label class="choice check"><input type="checkbox" value="核心功能" checked><span>核心功能</span></label>
+                  <label class="choice check"><input type="checkbox" value="用户体验" checked><span>用户体验</span></label>
+                  <label class="choice check"><input type="checkbox" value="商业模式"><span>商业模式</span></label>
+                  <label class="choice check"><input type="checkbox" value="市场趋势" checked><span>市场趋势</span></label>
+                  <label class="choice check"><input type="checkbox" value="技术生态"><span>技术生态</span></label>
+                  <label class="choice check"><input type="checkbox" value="近期动态" checked><span>近期动态</span></label>
+                </div>
+              </div>
+            </div>
+            <div class="actions"><button type="submit" class="btn primary">生成调研计划 <span class="arrow">→</span></button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- 状态二：任务确认 -->
+      <section id="view2" class="view">
+        <div class="eyebrow">RESEARCH PLAN</div>
+        <h1>确认分析任务</h1>
+        <p class="subhead">开始调研前，请确认分析边界、信息来源与报告结构。</p>
+        <div class="confirm-grid">
+          <div class="card confirm-card">
+            <h3>任务概览</h3>
+            <dl class="data-list">
+              <div class="data-row"><dt>分析目标</dt><dd id="cGoal">—</dd></div>
+              <div class="data-row"><dt>目标产品</dt><dd id="cTarget">—</dd></div>
+              <div class="data-row"><dt>对比竞品</dt><dd id="cCompetitors">—</dd></div>
+              <div class="data-row"><dt>目标市场</dt><dd id="cMarket">—</dd></div>
+              <div class="data-row"><dt>分析目的</dt><dd id="cPurpose">—</dd></div>
+              <div class="data-row"><dt>核心维度</dt><dd id="cDimensions">—</dd></div>
+            </dl>
+          </div>
+          <div class="card confirm-card">
+            <h3>调研与交付计划</h3>
+            <div class="field-label" style="margin-top:14px">计划采集的信息来源</div>
+            <ul class="mini-list"><li>产品官网、帮助中心与官方公告</li><li>应用商店版本记录与公开演示</li><li>权威媒体、行业报告及公开访谈</li><li>可复核的产品实测与交叉验证</li></ul>
+            <div class="field-label" style="margin-top:14px">最终报告结构</div>
+            <ul class="mini-list"><li>执行摘要与产品定位</li><li>功能矩阵、关键结论与机会洞察</li><li>逐条结论的证据审计清单</li></ul>
+            <div class="limit-box"><strong>可能的数据限制：</strong> 用户规模、内部模型路由及未公开商业数据可能无法独立核验；报告将标注推断边界与证据缺口。</div>
+          </div>
+        </div>
+        <div class="actions"><button class="btn" id="backEdit">返回修改</button><button class="btn primary" id="startResearch">确认并开始调研 <span class="arrow">→</span></button></div>
+      </section>
+
+      <!-- 状态三：执行过程 -->
+      <section id="view3" class="view">
+        <div class="eyebrow">AGENT RESEARCHING</div>
+        <h1>正在执行证据调研</h1>
+        <p class="subhead" id="runningCopy">Agent 正在按计划检索、交叉验证并审计公开信息。</p>
+        <div class="run-layout">
+          <div class="card process-card">
+            <ol class="process-list" id="processList">
+              <li class="process-item"><div class="process-icon">1</div><div><div class="process-name">理解需求</div><div class="process-detail">识别业务目标、对象与分析边界</div></div><div class="process-status">等待中</div></li>
+              <li class="process-item"><div class="process-icon">2</div><div><div class="process-name">拆分任务</div><div class="process-detail">生成检索问题与证据验收标准</div></div><div class="process-status">等待中</div></li>
+              <li class="process-item"><div class="process-icon">3</div><div><div class="process-name">搜集公开资料</div><div class="process-detail">覆盖官方、媒体与产品实测来源</div></div><div class="process-status">等待中</div></li>
+              <li class="process-item"><div class="process-icon">4</div><div><div class="process-name">信息清洗与去重</div><div class="process-detail">合并转载内容，保留原始出处</div></div><div class="process-status">等待中</div></li>
+              <li class="process-item"><div class="process-icon">5</div><div><div class="process-name">证据审计</div><div class="process-detail">标记冲突、缺口与可信等级</div></div><div class="process-status">等待中</div></li>
+              <li class="process-item"><div class="process-icon">6</div><div><div class="process-name">生成报告</div><div class="process-detail">区分事实、推断与产品建议</div></div><div class="process-status">等待中</div></li>
+            </ol>
+            <div class="bar-wrap"><div class="bar" id="progressBar"></div></div>
+            <div class="bar-meta"><span id="progressText">准备开始</span><strong id="progressPercent">0%</strong></div>
+          </div>
+          <aside>
+            <div class="card stats-card">
+              <h3>实时调研概览</h3>
+              <div class="stat"><span class="stat-label">已找到资料</span><span class="stat-value" data-final="38">0</span></div>
+              <div class="stat"><span class="stat-label">官方来源</span><span class="stat-value" data-final="12">0</span></div>
+              <div class="stat"><span class="stat-label">媒体来源</span><span class="stat-value" data-final="18">0</span></div>
+              <div class="stat"><span class="stat-label">存在冲突</span><span class="stat-value warn" data-final="3">0</span></div>
+              <div class="stat"><span class="stat-label">证据不足</span><span class="stat-value risk" data-final="5">0</span></div>
+              <div class="source-note">同一篇新闻的多次转载仅计为一个原始来源，避免“伪多源一致”。</div>
+            </div>
+            <button class="btn primary" id="viewReport" style="width:100%;margin-top:12px;display:none">查看分析报告 →</button>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 状态四：分析报告 -->
+      <section id="view4" class="view">
+        <div class="report-top">
+          <div><div class="eyebrow">COMPETITIVE REPORT · 已完成</div><h1 id="reportTitle">豆包 vs Kimi / 腾讯元宝 / 通义千问竞品分析</h1><p class="subhead" style="margin-bottom:0">公开信息研究 · 证据截止于 2026-07-31 · 共审计 38 条资料</p></div>
+          <div class="report-actions"><button class="btn" id="copySummary">复制摘要</button><button class="btn primary" id="newFromReport">新建分析</button></div>
+        </div>
+
+        <section class="card report-section">
+          <div class="section-head"><h2>1. 执行摘要</h2><span class="section-kicker">关键结论已完成证据分级</span></div>
+          <div class="summary-grid">
+            <p class="summary-main">四款产品都在向“综合 AI 助手”演进，但路径存在明显差异：豆包依托内容与多模态交互形成大众化体验；Kimi 在长文本与研究工作流上心智较强；腾讯元宝突出微信生态协同；通义千问则借助阿里云与办公生态形成场景纵深。短期机会不在功能数量，而在<strong>可信回答、任务闭环与上下文连续性</strong>。</p>
+            <div class="summary-score"><div class="score-label">本报告综合证据可信度</div><div><span class="score-num">B+</span> <span class="score-label">多源一致</span></div><div class="legend"><span class="badge fact">● 已验证事实 18</span><span class="badge infer">◆ 推断 7</span><span class="badge advice">▲ 建议 5</span></div></div>
+          </div>
+        </section>
+
+        <section class="card report-section">
+          <div class="section-head"><h2>2. 功能对比矩阵</h2><span class="section-kicker">● 强　◐ 中　○ 弱 / 信息不足</span></div>
+          <div class="table-wrap"><table><thead><tr><th>分析维度</th><th>豆包</th><th>Kimi</th><th>腾讯元宝</th><th>通义千问</th></tr></thead><tbody>
+            <tr><td>AI 搜索</td><td class="level-high">● 强</td><td class="level-high">● 强</td><td class="level-high">● 强</td><td class="level-mid">◐ 中</td></tr>
+            <tr><td>长文本处理</td><td class="level-mid">◐ 中</td><td class="level-high">● 强</td><td class="level-mid">◐ 中</td><td class="level-high">● 强</td></tr>
+            <tr><td>语音交互</td><td class="level-high">● 强</td><td class="level-mid">◐ 中</td><td class="level-mid">◐ 中</td><td class="level-mid">◐ 中</td></tr>
+            <tr><td>多模态</td><td class="level-high">● 强</td><td class="level-high">● 强</td><td class="level-mid">◐ 中</td><td class="level-high">● 强</td></tr>
+            <tr><td>Agent 能力</td><td class="level-mid">◐ 中</td><td class="level-high">● 强</td><td class="level-mid">◐ 中</td><td class="level-high">● 强</td></tr>
+            <tr><td>生态协同</td><td class="level-mid">◐ 中</td><td class="level-low">○ 弱</td><td class="level-high">● 强</td><td class="level-high">● 强</td></tr>
+          </tbody></table></div>
+        </section>
+
+        <section class="card report-section">
+          <div class="section-head"><h2>3. 关键结论</h2><span class="section-kicker">结论类型明确标注</span></div>
+          <div class="conclusion-grid">
+            <article class="conclusion"><span class="num">01</span><span class="badge fact" style="float:right">已验证事实</span><h3>差异化来自场景入口</h3><p>通用问答功能趋同，生态入口和高频场景成为竞争分水岭。</p></article>
+            <article class="conclusion"><span class="num">02</span><span class="badge infer" style="float:right">分析推断</span><h3>可信度将影响留存</h3><p>用户从尝鲜转向日常使用后，来源透明度对高价值任务更关键。</p></article>
+            <article class="conclusion"><span class="num">03</span><span class="badge advice" style="float:right">产品建议</span><h3>优先构建证据闭环</h3><p>建议将引用、冲突提示和事实边界前置到回答体验中。</p></article>
+          </div>
+        </section>
+
+        <section class="card report-section">
+          <div class="section-head"><h2>4. 机会洞察</h2><span class="section-kicker">基于证据与竞争空白生成</span></div>
+          <div class="opportunity"><div class="opp-icon">◎</div><div><div class="opp-title">从“给答案”升级到“给证据链”</div><div class="opp-desc">针对研究、决策类任务，默认展示证据强度、冲突和时效性。</div></div><span class="priority">高优先级</span></div>
+          <div class="opportunity"><div class="opp-icon">↗</div><div><div class="opp-title">提供可恢复的任务型工作流</div><div class="opp-desc">让复杂任务可暂停、可检查、可修改，并保留每一步的输入输出。</div></div><span class="priority">高优先级</span></div>
+          <div class="opportunity"><div class="opp-icon">◇</div><div><div class="opp-title">模型、产品与默认路由分层披露</div><div class="opp-desc">明确“模型已发布”“产品已接入”“当前默认使用”是三个不同事实。</div></div><span class="priority">基础能力</span></div>
+        </section>
+
+        <section class="card report-section">
+          <div class="section-head"><h2>5. 证据审计</h2><span class="section-kicker">点击查看证据，追溯关键结论</span></div>
+          <div class="audit-list" id="auditList"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal"><div class="modal-head"><h3 id="modalTitle">证据详情</h3><button class="close" id="closeModal" aria-label="关闭">×</button></div><div class="modal-body" id="modalBody"></div></div>
+  </div>
+  <div class="toast" id="toast">操作成功</div>
+
+  <script>
+    // ---------- 基础数据与状态 ----------
+    let competitors = ['Kimi', '腾讯元宝', '通义千问'];
+    let progressTimer = null;
+    let currentView = 1;
+    const $ = (s, root = document) => root.querySelector(s);
+    const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+
+    const auditData = [
+      { conclusion:'豆包已将语音交互作为核心产品体验之一', type:'已验证事实', grade:'A', sources:3, risk:'版本差异', evidence:[{title:'豆包产品功能说明与版本更新记录', publisher:'豆包官方', published:'2026-06-18', acquired:'2026-07-31', level:'一级｜官方原始来源', quote:'官方功能页明确列出实时语音对话、声音选择与语音输入能力。', risk:'不同系统与灰度版本的可用能力可能不同。'}]},
+      { conclusion:'Kimi 在长文本研究场景中具备较强用户心智', type:'分析推断', grade:'B', sources:5, risk:'样本偏差', evidence:[{title:'Kimi 产品能力介绍', publisher:'月之暗面', published:'2026-05-09', acquired:'2026-07-31', level:'一级｜官方原始来源', quote:'产品材料持续强调文档处理、深度搜索和研究型任务。', risk:'官方定位不能单独证明真实用户心智。'},{title:'AI 助手用户调研摘要', publisher:'示例行业研究院', published:'2026-07-02', acquired:'2026-07-31', level:'二级｜独立研究来源', quote:'受访用户在长文阅读与资料整理任务中多次主动提及 Kimi。', risk:'样本量和人群结构限制结论的外推。'}]},
+      { conclusion:'腾讯元宝的微信生态入口形成协同优势', type:'已验证事实', grade:'B', sources:4, risk:'实际转化未知', evidence:[{title:'腾讯元宝产品更新公告', publisher:'腾讯官方', published:'2026-06-26', acquired:'2026-07-31', level:'一级｜官方原始来源', quote:'公告确认产品对微信内部分场景与内容入口的连接能力。', risk:'接入能力不等同于用户使用频率或商业转化。'}]},
+      { conclusion:'通义千问客户端默认使用最新旗舰模型', type:'待核验事实', grade:'D', sources:3, risk:'来源冲突', evidence:[{title:'通义系列模型发布说明', publisher:'阿里云', published:'2026-07-10', acquired:'2026-07-31', level:'一级｜官方模型来源', quote:'材料确认最新旗舰模型已发布并提供服务。', risk:'模型发布不等于客户端已经接入，更不等于默认路由使用。'},{title:'客户端体验测试记录', publisher:'InsightFlow 模拟实测', published:'2026-07-29', acquired:'2026-07-31', level:'三级｜产品实测', quote:'客户端未展示每次对话实际调用的具体模型版本。', risk:'无法从输出表现可靠反推出底层默认模型。'}]},
+      { conclusion:'四款产品均已形成稳定的 Agent 商业化闭环', type:'分析推断', grade:'E', sources:2, risk:'证据不足', evidence:[{title:'公开产品页面汇总', publisher:'多产品官方页面', published:'2026-07-20', acquired:'2026-07-31', level:'一级｜官方功能来源', quote:'多款产品公开展示了 Agent 或智能体相关功能入口。', risk:'功能存在不代表付费转化、留存与商业闭环已经稳定。'}]}
+    ];
+
+    // ---------- 标签输入 ----------
+    function renderTags() {
+      $$('.tag', $('#tagsBox')).forEach(t => t.remove());
+      competitors.forEach((name, i) => {
+        const el = document.createElement('span'); el.className = 'tag';
+        el.innerHTML = `<span>${escapeHtml(name)}</span><button type="button" aria-label="删除${escapeHtml(name)}" data-remove="${i}">×</button>`;
+        $('#tagsBox').insertBefore(el, $('#tagInput'));
+      });
+    }
+    $('#tagInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ',') {
+        e.preventDefault(); const value = e.target.value.trim().replace(/,$/, '');
+        if (value && !competitors.includes(value)) { competitors.push(value); renderTags(); }
+        e.target.value = '';
+      }
+    });
+    $('#tagsBox').addEventListener('click', e => { if (e.target.dataset.remove !== undefined) { competitors.splice(+e.target.dataset.remove, 1); renderTags(); } else $('#tagInput').focus(); });
+    renderTags();
+
+    function escapeHtml(str) { const d=document.createElement('div'); d.textContent=String(str); return d.innerHTML; }
+    function radioValue(name) { return $(`input[name="${name}"]:checked`).value; }
+    function dimensions() { return $$('#dimensionChoices input:checked').map(x => x.value); }
+
+    // ---------- 页面状态切换 ----------
+    function showView(n) {
+      currentView = n;
+      $$('.view').forEach(v => v.classList.remove('active')); $(`#view${n}`).classList.add('active');
+      $$('.step').forEach((s, i) => { s.classList.toggle('active', i === n-1); s.classList.toggle('done', i < n-1); const idx=$('.step-index',s); idx.textContent=i<n-1?'✓':i+1; });
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+    $('#analysisForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const target = $('#targetProduct').value.trim();
+      if (!target) return showToast('请填写目标产品');
+      if (!competitors.length) return showToast('请至少添加一个竞品');
+      if (!dimensions().length) return showToast('请至少选择一个分析维度');
+      $('#cGoal').textContent = `为“${radioValue('purpose')}”识别 ${target} 的竞争差异与机会`;
+      $('#cTarget').textContent = target; $('#cCompetitors').textContent = competitors.join('、');
+      $('#cMarket').textContent = radioValue('market'); $('#cPurpose').textContent = radioValue('purpose'); $('#cDimensions').textContent = dimensions().join('、');
+      $('#reportTitle').textContent = `${target} vs ${competitors.join(' / ')}竞品分析`;
+      showView(2);
+    });
+    $('#backEdit').onclick = () => showView(1);
+    $('#startResearch').onclick = () => { showView(3); startProgress(); };
+    $('#viewReport').onclick = () => showView(4);
+    $('#newFromReport').onclick = resetToNew;
+
+    // ---------- 模拟分析进度 ----------
+    function startProgress() {
+      clearInterval(progressTimer);
+      const items = $$('.process-item'); let tick = 0; const totalTicks = 18;
+      items.forEach(i => { i.classList.remove('active','done'); $('.process-status',i).textContent='等待中'; });
+      $('#viewReport').style.display='none'; $('#runningCopy').textContent='Agent 正在按计划检索、交叉验证并审计公开信息。';
+      $$('.stat-value[data-final]').forEach(x => x.textContent='0');
+      function update() {
+        tick++; const pct = Math.min(100, Math.round(tick / totalTicks * 100)); const activeIndex = Math.min(5, Math.floor((tick-1)/3));
+        items.forEach((item, i) => {
+          item.classList.toggle('done', i < activeIndex || (tick >= totalTicks && i === 5));
+          item.classList.toggle('active', i === activeIndex && tick < totalTicks);
+          $('.process-status', item).textContent = item.classList.contains('done') ? '已完成' : item.classList.contains('active') ? '进行中…' : '等待中';
+        });
+        $('#progressBar').style.width = pct+'%'; $('#progressPercent').textContent=pct+'%';
+        $('#progressText').textContent = tick>=totalTicks ? '分析报告已生成' : `正在${$('.process-name',items[activeIndex]).textContent}…`;
+        $$('.stat-value[data-final]').forEach((el,i) => { const final=+el.dataset.final; const stagger=Math.max(0,(tick-i*.35)/totalTicks); el.textContent=Math.min(final,Math.round(final*stagger)); });
+        if (tick >= totalTicks) { clearInterval(progressTimer); $('#runningCopy').textContent='调研与证据审计已完成，报告已准备就绪。'; $('#viewReport').style.display='block'; }
+      }
+      update(); progressTimer=setInterval(update, 420);
+    }
+
+    // ---------- 证据审计与弹窗 ----------
+    function renderAudit() {
+      $('#auditList').innerHTML = auditData.map((a,i) => `<div class="audit-row"><div><div class="audit-title">${a.conclusion}</div><div class="audit-cell">关键结论 ${String(i+1).padStart(2,'0')}</div></div><div class="audit-cell"><span class="badge ${a.type==='已验证事实'?'fact':a.type==='分析推断'?'infer':'advice'}">${a.type}</span></div><div class="audit-cell"><span class="grade ${a.grade}">${a.grade}</span> ${gradeName(a.grade)}</div><div class="audit-cell">${a.sources} 个来源</div><div class="audit-cell">${a.risk}</div><button class="evidence-btn" data-evidence="${i}">查看证据</button></div>`).join('');
+    }
+    function gradeName(g){return {A:'官方确认',B:'多源一致',C:'有限支持',D:'来源冲突',E:'证据不足'}[g]}
+    $('#auditList').addEventListener('click', e => { if(e.target.dataset.evidence!==undefined) openEvidence(+e.target.dataset.evidence); });
+    function openEvidence(i) {
+      const a=auditData[i]; $('#modalTitle').textContent=`证据详情 · ${a.grade}级 ${gradeName(a.grade)}`;
+      $('#modalBody').innerHTML=`<div class="modal-conclusion"><strong>结论：</strong>${a.conclusion}<br><small>事实类型：${a.type}　·　主要风险：${a.risk}</small></div>`+a.evidence.map((s,j)=>`<div class="evidence-source"><div class="source-title">来源 ${j+1}｜${s.title}</div><div class="source-meta"><span>发布主体：${s.publisher}</span><span>发布时间：${s.published}</span><span>获取日期：${s.acquired}</span><span>来源等级：${s.level}</span></div><div class="quote"><strong>直接证据</strong><br>${s.quote}</div><div class="risk-note"><strong>风险说明：</strong>${s.risk}</div></div>`).join('');
+      openModal();
+    }
+    function openModal(){ $('#modalBackdrop').classList.add('open'); document.body.style.overflow='hidden'; }
+    function closeModal(){ $('#modalBackdrop').classList.remove('open'); document.body.style.overflow=''; }
+    $('#closeModal').onclick=closeModal; $('#modalBackdrop').addEventListener('click',e=>{if(e.target===$('#modalBackdrop'))closeModal()});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+    renderAudit();
+
+    // ---------- 顶部导航与辅助交互 ----------
+    $$('[data-nav]').forEach(btn => btn.addEventListener('click', () => {
+      $$('.nav-btn').forEach(x=>x.classList.remove('active')); btn.classList.add('active');
+      if(btn.dataset.nav==='new') resetToNew();
+      if(btn.dataset.nav==='history') { $('#modalTitle').textContent='历史分析任务'; $('#modalBody').innerHTML='<div class="history-item"><div><strong>豆包竞品分析</strong><div class="audit-cell">今天 14:32 · 已完成</div></div><span class="badge fact">可信度 B+</span></div><div class="history-item"><div><strong>AI 办公助手市场扫描</strong><div class="audit-cell">2026-07-28 · 已完成</div></div><span class="badge fact">可信度 B</span></div><div class="history-item"><div><strong>智能搜索产品格局</strong><div class="audit-cell">2026-07-22 · 草稿</div></div><span class="badge infer">待继续</span></div>'; openModal(); }
+      if(btn.dataset.nav==='rules') { $('#modalTitle').textContent='A–E 可信度规则'; $('#modalBody').innerHTML='<p style="color:var(--muted);margin-top:0">可信等级衡量证据对结论的支持程度，而不是结论看起来是否合理。</p><div class="rules"><div class="rule"><span class="grade A">A</span><p>官方确认</p></div><div class="rule"><span class="grade B">B</span><p>多源一致</p></div><div class="rule"><span class="grade C">C</span><p>有限支持</p></div><div class="rule"><span class="grade D">D</span><p>来源冲突</p></div><div class="rule"><span class="grade E">E</span><p>证据不足</p></div></div><div class="limit-box" style="margin-top:18px"><strong>重要原则：</strong>模型发布、产品接入、产品默认使用模型是三个不同事实，不能相互替代证明；多个转载页面也不等于多个独立来源。</div>'; openModal(); }
+    }));
+    function resetToNew(){ clearInterval(progressTimer); showView(1); $$('.nav-btn').forEach(x=>x.classList.toggle('active',x.dataset.nav==='new')); }
+    $('#copySummary').onclick=async()=>{ const text=$('.summary-main').innerText; try{await navigator.clipboard.writeText(text);showToast('执行摘要已复制')}catch{showToast('当前浏览器不允许自动复制')} };
+    let toastTimer; function showToast(msg){ clearTimeout(toastTimer); $('#toast').textContent=msg; $('#toast').classList.add('show'); toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2200); }
+  </script>
+</body>
+</html>

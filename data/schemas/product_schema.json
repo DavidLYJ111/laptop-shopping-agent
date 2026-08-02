@@ -1,0 +1,390 @@
+{
+  "$defs": {
+    "DataKind": {
+      "enum": [
+        "real",
+        "demo",
+        "mock"
+      ],
+      "title": "DataKind",
+      "type": "string"
+    },
+    "GPUType": {
+      "enum": [
+        "核显",
+        "独立显卡"
+      ],
+      "title": "GPUType",
+      "type": "string"
+    },
+    "ProductCategory": {
+      "enum": [
+        "轻薄本",
+        "全能本",
+        "游戏本"
+      ],
+      "title": "ProductCategory",
+      "type": "string"
+    },
+    "VerificationStatus": {
+      "enum": [
+        "已核验",
+        "部分核验",
+        "待核验"
+      ],
+      "title": "VerificationStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "sku_id": {
+      "minLength": 3,
+      "pattern": "^[a-z0-9][a-z0-9_\\-]+$",
+      "title": "Sku Id",
+      "type": "string"
+    },
+    "brand": {
+      "minLength": 1,
+      "title": "Brand",
+      "type": "string"
+    },
+    "series": {
+      "minLength": 1,
+      "title": "Series",
+      "type": "string"
+    },
+    "model_name": {
+      "minLength": 1,
+      "title": "Model Name",
+      "type": "string"
+    },
+    "product_category": {
+      "$ref": "#/$defs/ProductCategory"
+    },
+    "release_year": {
+      "maximum": 2030,
+      "minimum": 2020,
+      "title": "Release Year",
+      "type": "integer"
+    },
+    "price": {
+      "maximum": 30000,
+      "minimum": 2000,
+      "title": "Price",
+      "type": "integer"
+    },
+    "cpu_brand": {
+      "minLength": 1,
+      "title": "Cpu Brand",
+      "type": "string"
+    },
+    "cpu_model": {
+      "minLength": 1,
+      "title": "Cpu Model",
+      "type": "string"
+    },
+    "cpu_cores": {
+      "anyOf": [
+        {
+          "maximum": 64,
+          "minimum": 2,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Cpu Cores"
+    },
+    "gpu_type": {
+      "$ref": "#/$defs/GPUType"
+    },
+    "gpu_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gpu Model"
+    },
+    "gpu_vram_gb": {
+      "anyOf": [
+        {
+          "maximum": 32,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gpu Vram Gb"
+    },
+    "gpu_tgp_w": {
+      "anyOf": [
+        {
+          "maximum": 250,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Gpu Tgp W"
+    },
+    "ram_gb": {
+      "enum": [
+        8,
+        16,
+        32,
+        64,
+        128
+      ],
+      "title": "Ram Gb",
+      "type": "integer"
+    },
+    "storage_type": {
+      "const": "SSD",
+      "default": "SSD",
+      "title": "Storage Type",
+      "type": "string"
+    },
+    "storage_capacity": {
+      "maximum": 8192,
+      "minimum": 256,
+      "title": "Storage Capacity",
+      "type": "integer"
+    },
+    "screen_size": {
+      "maximum": 18.5,
+      "minimum": 10.0,
+      "title": "Screen Size",
+      "type": "number"
+    },
+    "resolution": {
+      "pattern": "^\\d{3,5}x\\d{3,5}$",
+      "title": "Resolution",
+      "type": "string"
+    },
+    "refresh_rate": {
+      "anyOf": [
+        {
+          "maximum": 500,
+          "minimum": 30,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Refresh Rate"
+    },
+    "weight_kg": {
+      "maximum": 4.0,
+      "minimum": 0.8,
+      "title": "Weight Kg",
+      "type": "number"
+    },
+    "battery_wh": {
+      "anyOf": [
+        {
+          "maximum": 150,
+          "minimum": 20,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Battery Wh"
+    },
+    "os": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Os"
+    },
+    "ports": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Ports",
+      "type": "array"
+    },
+    "product_title": {
+      "minLength": 1,
+      "title": "Product Title",
+      "type": "string"
+    },
+    "selling_points": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Selling Points",
+      "type": "array"
+    },
+    "scenario_desc": {
+      "default": "",
+      "title": "Scenario Desc",
+      "type": "string"
+    },
+    "pros_summary": {
+      "default": "",
+      "title": "Pros Summary",
+      "type": "string"
+    },
+    "cons_summary": {
+      "default": "",
+      "title": "Cons Summary",
+      "type": "string"
+    },
+    "user_review_summary": {
+      "default": "",
+      "title": "User Review Summary",
+      "type": "string"
+    },
+    "image_main": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Image Main"
+    },
+    "image_param_page": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Image Param Page"
+    },
+    "image_detail": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Image Detail"
+    },
+    "data_sources": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Data Sources",
+      "type": "array"
+    },
+    "verification_status": {
+      "$ref": "#/$defs/VerificationStatus"
+    },
+    "collect_date": {
+      "format": "date",
+      "title": "Collect Date",
+      "type": "string"
+    },
+    "data_kind": {
+      "$ref": "#/$defs/DataKind"
+    },
+    "source_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Url"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "cpu_performance_score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Cpu Performance Score",
+      "type": "number"
+    },
+    "gpu_performance_score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Gpu Performance Score",
+      "type": "number"
+    },
+    "portability_score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Portability Score",
+      "type": "number"
+    },
+    "battery_capacity_score": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Battery Capacity Score",
+      "type": "number"
+    }
+  },
+  "required": [
+    "sku_id",
+    "brand",
+    "series",
+    "model_name",
+    "product_category",
+    "release_year",
+    "price",
+    "cpu_brand",
+    "cpu_model",
+    "gpu_type",
+    "ram_gb",
+    "storage_capacity",
+    "screen_size",
+    "resolution",
+    "weight_kg",
+    "product_title",
+    "data_sources",
+    "verification_status",
+    "collect_date",
+    "data_kind",
+    "cpu_performance_score",
+    "gpu_performance_score",
+    "portability_score",
+    "battery_capacity_score"
+  ],
+  "title": "Product",
+  "type": "object"
+}

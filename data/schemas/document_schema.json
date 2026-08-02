@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "DataKind": {
+      "enum": [
+        "real",
+        "demo",
+        "mock"
+      ],
+      "title": "DataKind",
+      "type": "string"
+    },
+    "DocumentType": {
+      "enum": [
+        "fact",
+        "evidence",
+        "derived"
+      ],
+      "title": "DocumentType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "document_id": {
+      "minLength": 3,
+      "pattern": "^[a-z0-9][a-z0-9_\\-]+$",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "sku_id": {
+      "minLength": 3,
+      "title": "Sku Id",
+      "type": "string"
+    },
+    "document_type": {
+      "$ref": "#/$defs/DocumentType"
+    },
+    "source": {
+      "minLength": 1,
+      "title": "Source",
+      "type": "string"
+    },
+    "source_date": {
+      "format": "date",
+      "title": "Source Date",
+      "type": "string"
+    },
+    "content": {
+      "minLength": 3,
+      "title": "Content",
+      "type": "string"
+    },
+    "data_kind": {
+      "$ref": "#/$defs/DataKind"
+    }
+  },
+  "required": [
+    "document_id",
+    "sku_id",
+    "document_type",
+    "source",
+    "source_date",
+    "content",
+    "data_kind"
+  ],
+  "title": "Document",
+  "type": "object"
+}

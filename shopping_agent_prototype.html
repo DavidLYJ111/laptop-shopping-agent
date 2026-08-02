@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于多模态 RAG 与约束推理的电商智能导购 Agent Day 2 交互原型">
+  <title>智选本 · 电商智能导购 Agent 原型</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e5e9f2;
+      --surface: #ffffff;
+      --soft: #f5f7fb;
+      --blue: #3c65f5;
+      --violet: #7559e8;
+      --cyan: #26a7c8;
+      --success: #16835b;
+      --warning: #b56a15;
+      --danger: #ba3a45;
+      --shadow: 0 18px 48px rgba(38, 54, 90, .10);
+      --radius: 22px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 5%, rgba(96, 132, 255, .13), transparent 28rem),
+        radial-gradient(circle at 92% 14%, rgba(126, 84, 226, .11), transparent 27rem),
+        #f8f9fc;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      line-height: 1.6;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: 3px solid rgba(60, 101, 245, .2); outline-offset: 2px;
+    }
+    .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(18px); background: rgba(248, 249, 252, .86);
+      border-bottom: 1px solid rgba(218, 223, 235, .75);
+    }
+    .topbar-inner { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark {
+      width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: white;
+      background: linear-gradient(135deg, var(--blue), var(--violet)); box-shadow: 0 8px 20px rgba(74, 85, 220, .25);
+    }
+    .nav { display: flex; gap: 22px; align-items: center; }
+    .nav a { color: #536078; text-decoration: none; font-size: 14px; font-weight: 650; }
+    .prototype-pill, .chip {
+      display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; font-size: 12px; font-weight: 750;
+    }
+    .prototype-pill { padding: 7px 11px; color: #5643b2; background: #efebff; border: 1px solid #ded7ff; }
+    .prototype-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #7658e8; }
+    .hero { padding: 92px 0 74px; position: relative; overflow: hidden; }
+    .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 58px; align-items: center; }
+    .eyebrow { color: var(--blue); font-weight: 800; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font-size: clamp(38px, 5.2vw, 66px); line-height: 1.08; letter-spacing: -.055em; margin: 16px 0 22px; }
+    .gradient-text { background: linear-gradient(115deg, #315de8, #744fdc 75%); color: transparent; background-clip: text; }
+    .hero-copy { font-size: 18px; color: #5f6b80; max-width: 680px; margin: 0 0 28px; }
+    .capabilities { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 30px; }
+    .chip { padding: 7px 12px; color: #42516b; background: rgba(255,255,255,.78); border: 1px solid #e1e6f0; }
+    .hero-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .btn { border: 0; border-radius: 13px; padding: 12px 18px; font-weight: 750; transition: .18s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-primary { color: white; background: linear-gradient(120deg, var(--blue), var(--violet)); box-shadow: 0 10px 24px rgba(69, 82, 221, .24); }
+    .btn-secondary { color: #42516b; background: white; border: 1px solid #dfe4ee; }
+    .btn-ghost { color: var(--blue); background: #eef2ff; }
+    .btn-danger { color: var(--danger); background: #fff0f1; border: 1px solid #ffd7da; }
+    .hero-demo {
+      background: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.95); border-radius: 28px;
+      box-shadow: var(--shadow); padding: 24px; transform: rotate(1deg); position: relative;
+    }
+    .hero-demo::after { content: ""; position: absolute; inset: -24px 18px 20px -20px; z-index: -1; border-radius: 32px; background: linear-gradient(145deg, rgba(83,122,255,.15), rgba(132,86,231,.12)); transform: rotate(-3deg); }
+    .mini-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .mini-title { font-weight: 800; }
+    .signal { display:flex; align-items:center; gap:6px; color:var(--success); font-size:12px; font-weight:700; }
+    .signal::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--success); box-shadow:0 0 0 5px rgba(22,131,91,.1); }
+    .mini-query { padding: 16px; border-radius: 16px; background:#f2f5fb; color:#42516b; font-size:14px; }
+    .flow { display:grid; gap:10px; margin:18px 0; }
+    .flow-row { display:flex; align-items:center; gap:10px; font-size:13px; color:#59667b; }
+    .flow-num { width:25px; height:25px; display:grid; place-items:center; border-radius:8px; color:#4f64d7; background:#edf0ff; font-weight:800; }
+    .mini-result { display:grid; grid-template-columns:48px 1fr auto; gap:12px; align-items:center; padding:14px; border:1px solid #e5e9f2; border-radius:16px; }
+    .laptop-icon { width:48px; height:42px; border-radius:10px; display:grid; place-items:center; color:white; font-weight:900; background:linear-gradient(145deg,#4f73f1,#7558dd); }
+    .mini-result strong { display:block; font-size:14px; }
+    .mini-result small { color:var(--muted); }
+    .match { color:var(--success); font-weight:850; }
+    .notice-band { margin-top: 26px; display:flex; align-items:flex-start; gap:10px; padding:13px 15px; border-radius:14px; color:#73561f; background:#fff8e8; border:1px solid #f5e4b7; font-size:13px; }
+    main { padding-bottom: 80px; }
+    .section { padding: 38px 0; scroll-margin-top: 78px; }
+    .section-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin-bottom:22px; }
+    .section-index { color:var(--blue); font-size:12px; font-weight:850; letter-spacing:.14em; }
+    h2 { margin:4px 0 0; font-size:clamp(26px,3vw,36px); letter-spacing:-.035em; line-height:1.2; }
+    .section-desc { color:var(--muted); max-width:510px; margin:0; font-size:14px; }
+    .panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:0 12px 38px rgba(42,53,85,.07); }
+    .consult-panel { display:grid; grid-template-columns:1.1fr .9fr; overflow:hidden; }
+    .query-side { padding:28px; border-right:1px solid var(--line); }
+    .control-side { padding:28px; background:#fbfcfe; }
+    label { display:block; font-size:13px; font-weight:750; color:#44516a; margin-bottom:7px; }
+    textarea, input, select { width:100%; border:1px solid #dce2ed; border-radius:12px; background:white; color:var(--ink); padding:11px 13px; }
+    textarea { resize:vertical; min-height:164px; line-height:1.7; }
+    textarea::placeholder { color:#9aa3b4; }
+    .examples { display:grid; gap:9px; margin-top:16px; }
+    .example-btn { text-align:left; border:1px solid #e2e6ef; border-radius:12px; padding:10px 12px; color:#536078; background:#fff; font-size:12px; }
+    .example-btn:hover { border-color:#aebaf0; background:#f7f8ff; color:#344db9; }
+    .example-label { display:inline-grid; place-items:center; width:21px; height:21px; margin-right:8px; border-radius:7px; color:#5266d7; background:#eef1ff; font-weight:850; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .field-wide { grid-column:1 / -1; }
+    .toggle-line { min-height:45px; display:flex; align-items:center; justify-content:space-between; border:1px solid #dce2ed; border-radius:12px; background:white; padding:8px 12px; }
+    .toggle-line span { font-size:13px; font-weight:650; color:#4c5970; }
+    .switch { position:relative; width:42px; height:24px; }
+    .switch input { opacity:0; width:0; height:0; position:absolute; }
+    .slider { position:absolute; inset:0; border-radius:999px; background:#cbd2df; transition:.2s; }
+    .slider::after { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; border-radius:50%; background:white; box-shadow:0 2px 5px rgba(0,0,0,.18); transition:.2s; }
+    .switch input:checked + .slider { background:var(--blue); }
+    .switch input:checked + .slider::after { transform:translateX(18px); }
+    .form-actions { display:flex; gap:10px; margin-top:20px; }
+    .form-actions .btn-primary { flex:1; }
+    .agent-panel { padding:24px; }
+    .process-list { display:grid; grid-template-columns:repeat(6,1fr); gap:9px; }
+    .process-step { position:relative; min-height:94px; border:1px solid #e4e8f1; border-radius:14px; background:#fafbfe; padding:13px 11px; color:#8590a3; font-size:12px; transition:.25s; }
+    .process-step::before { content:attr(data-step); display:grid; place-items:center; width:24px; height:24px; margin-bottom:9px; border-radius:8px; background:#edf0f5; font-weight:850; }
+    .process-step.active { color:#3d55c2; border-color:#b8c3f4; background:#f1f3ff; transform:translateY(-2px); }
+    .process-step.active::before { color:white; background:linear-gradient(135deg,var(--blue),var(--violet)); }
+    .process-step.done { color:var(--success); border-color:#bee5d6; background:#f1fbf7; }
+    .process-step.done::before { content:"✓"; color:white; background:var(--success); }
+    .parse-card { display:none; margin-top:18px; padding:19px; border:1px solid #dfe4ee; border-radius:16px; background:linear-gradient(135deg,#f9fbff,#f7f4ff); }
+    .parse-card.show { display:block; animation:rise .35s ease both; }
+    @keyframes rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    .parse-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-top:13px; }
+    .parse-item { padding:12px; border-radius:12px; background:rgba(255,255,255,.8); border:1px solid #e4e8f1; }
+    .parse-item small { display:block; color:var(--muted); margin-bottom:3px; }
+    .parse-item strong { font-size:13px; }
+    .result-meta { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:16px; }
+    .result-count { color:var(--muted); font-size:14px; }
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+    .product-card { position:relative; display:flex; flex-direction:column; min-width:0; overflow:hidden; background:white; border:1px solid var(--line); border-radius:20px; box-shadow:0 12px 32px rgba(37,50,83,.07); animation:rise .35s ease both; }
+    .product-card:nth-child(2) { animation-delay:.06s; } .product-card:nth-child(3) { animation-delay:.12s; }
+    .product-visual { min-height:126px; display:flex; align-items:flex-end; justify-content:space-between; padding:19px; color:white; background:linear-gradient(140deg,#496fef,#7156d9); }
+    .product-card:nth-child(2) .product-visual { background:linear-gradient(140deg,#317fa0,#5269d7); }
+    .product-card:nth-child(3) .product-visual { background:linear-gradient(140deg,#6951c2,#ba659d); }
+    .product-monogram { font-size:34px; line-height:1; font-weight:900; opacity:.92; letter-spacing:-.08em; }
+    .rank { align-self:flex-start; padding:5px 9px; border-radius:999px; color:#41506a; background:rgba(255,255,255,.9); font-size:11px; font-weight:850; }
+    .product-body { display:flex; flex-direction:column; flex:1; padding:18px; }
+    .product-kicker { display:flex; justify-content:space-between; gap:12px; align-items:center; color:var(--muted); font-size:11px; }
+    .evidence-tag { padding:4px 7px; border-radius:7px; color:#5366bf; background:#edf0ff; font-weight:800; }
+    .product-body h3 { margin:10px 0 5px; line-height:1.32; font-size:18px; letter-spacing:-.02em; }
+    .price { margin-bottom:13px; color:#26395f; font-weight:900; font-size:21px; }
+    .price small { font-size:11px; color:var(--muted); font-weight:600; }
+    .specs { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:15px; }
+    .spec { padding:7px 9px; border-radius:9px; background:#f7f8fb; min-width:0; }
+    .spec small { display:block; color:#8a94a5; font-size:10px; }
+    .spec span { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; font-weight:700; color:#4a566d; }
+    .reason { margin:0 0 14px; padding-left:17px; color:#59667b; font-size:12px; }
+    .reason li + li { margin-top:4px; }
+    .card-bottom { margin-top:auto; display:flex; justify-content:space-between; gap:10px; align-items:center; padding-top:14px; border-top:1px solid #edf0f4; }
+    .match-score strong { display:block; color:var(--success); font-size:17px; }
+    .match-score small { color:var(--muted); font-size:10px; }
+    .compare-btn { padding:9px 11px; border-radius:10px; border:1px solid #cfd7ef; color:#3e58c4; background:white; font-size:12px; font-weight:800; }
+    .compare-btn.selected { color:var(--success); background:#eefaf5; border-color:#bce1d2; }
+    .empty-state { padding:46px; text-align:center; color:var(--muted); border:1px dashed #cfd6e4; border-radius:18px; background:rgba(255,255,255,.55); }
+    .conflict { display:none; padding:24px; border:1px solid #f0d0aa; border-radius:20px; background:linear-gradient(140deg,#fffaf1,#fff7f4); box-shadow:0 12px 34px rgba(124,76,31,.07); }
+    .conflict.show { display:block; animation:rise .35s ease both; }
+    .conflict-head { display:flex; gap:15px; align-items:flex-start; }
+    .conflict-mark { width:40px; height:40px; flex:0 0 40px; display:grid; place-items:center; border-radius:12px; color:#a25d13; background:#ffebcb; font-weight:900; }
+    .conflict h3 { margin:0 0 4px; font-size:20px; }
+    .conflict p { margin:0; color:#735d46; font-size:13px; }
+    .conflict-analysis { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:18px 0; }
+    .analysis-box { padding:15px; border-radius:14px; border:1px solid #f0dbc1; background:rgba(255,255,255,.67); }
+    .analysis-box strong { display:block; margin-bottom:5px; font-size:13px; }
+    .analysis-box ul { margin:0; padding-left:18px; color:#735d46; font-size:12px; }
+    .nearest-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .nearest-card { padding:16px; border-radius:15px; background:white; border:1px solid #efdac3; }
+    .nearest-card h4 { margin:0 0 4px; }
+    .nearest-card .not-exact { display:inline-block; padding:3px 7px; border-radius:6px; color:#a45b13; background:#fff0d9; font-size:10px; font-weight:850; }
+    .constraint-lines { display:grid; gap:6px; margin-top:12px; font-size:12px; }
+    .pass-line { color:var(--success); } .fail-line { color:var(--danger); }
+    .compare-panel { padding:24px; }
+    .compare-toolbar { display:flex; justify-content:space-between; align-items:center; gap:14px; margin-bottom:16px; }
+    .compare-selected { display:flex; flex-wrap:wrap; gap:8px; min-height:34px; align-items:center; }
+    .selected-chip { display:flex; align-items:center; gap:7px; padding:6px 9px; border-radius:9px; color:#42516b; background:#eef1f8; font-size:12px; font-weight:700; }
+    .selected-chip button { padding:0; border:0; background:transparent; color:#8b94a5; font-weight:900; }
+    .table-wrap { overflow:auto; border:1px solid #e4e8f0; border-radius:14px; }
+    table { width:100%; border-collapse:collapse; min-width:720px; font-size:12px; }
+    th, td { padding:12px 14px; border-bottom:1px solid #e8ebf2; text-align:left; vertical-align:top; }
+    thead th { color:#42516b; background:#f6f8fc; font-size:12px; }
+    tbody th { width:118px; color:#69758a; background:#fbfcfe; }
+    tr:last-child th, tr:last-child td { border-bottom:0; }
+    .compare-insight { margin-top:14px; padding:15px; border-radius:14px; color:#44516a; background:#f1f4ff; border:1px solid #dce3ff; font-size:13px; }
+    .upload-grid { display:grid; grid-template-columns:.85fr 1.15fr; gap:18px; }
+    .upload-box, .parse-result-box { padding:24px; }
+    .dropzone { min-height:240px; display:grid; place-items:center; text-align:center; border:1.5px dashed #bfc8dc; border-radius:17px; background:#fafbfe; overflow:hidden; }
+    .dropzone.has-image { padding:0; border-style:solid; }
+    .dropzone img { width:100%; height:240px; object-fit:contain; background:#eef1f6; }
+    .upload-icon { width:50px; height:50px; display:grid; place-items:center; margin:0 auto 12px; border-radius:15px; color:#5369d7; background:#edf0ff; font-size:22px; font-weight:900; }
+    .dropzone p { margin:0 0 11px; color:#5d6980; font-size:13px; }
+    input[type=file] { display:none; }
+    .parse-placeholder { min-height:240px; display:grid; place-items:center; text-align:center; color:#8a94a5; border:1px solid #e2e6ef; border-radius:17px; background:#fbfcfe; padding:24px; }
+    .parsed-result { display:none; }
+    .parsed-result.show { display:block; animation:rise .35s ease both; }
+    .parsed-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+    .parsed-field { padding:10px; border-radius:11px; background:#f6f8fc; }
+    .parsed-field small { display:block; color:var(--muted); font-size:10px; }
+    .parsed-field strong { font-size:13px; }
+    .confidence { padding:12px; border-radius:12px; color:#4357b8; background:#edf1ff; font-size:12px; }
+    .prototype-note { margin-top:12px; padding:12px; border-radius:12px; color:#75591f; background:#fff8e8; border:1px solid #f1e1b7; font-size:11px; }
+    .mvp-card { overflow:hidden; background:#fff; border:1px solid #dfe4ee; border-radius:28px; box-shadow:var(--shadow); }
+    .mvp-top { display:grid; grid-template-columns:1fr auto; gap:28px; align-items:end; padding:32px; color:white; background:linear-gradient(125deg,#305dda,#7152d4); }
+    .mvp-top h2 { max-width:760px; margin-top:8px; }
+    .mvp-top p { margin:10px 0 0; color:rgba(255,255,255,.8); max-width:780px; }
+    .mvp-stamp { padding:10px 13px; border:1px solid rgba(255,255,255,.28); border-radius:12px; background:rgba(255,255,255,.11); font-size:12px; font-weight:850; }
+    .mvp-body { padding:28px 32px 32px; }
+    .mvp-user { display:grid; grid-template-columns:150px 1fr; gap:20px; padding-bottom:22px; border-bottom:1px solid var(--line); }
+    .mvp-label { color:var(--blue); font-size:12px; font-weight:850; letter-spacing:.1em; }
+    .mvp-user p { margin:0; color:#4e5b72; }
+    .mvp-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:20px; }
+    .mvp-block { padding:19px; border-radius:16px; background:#f8f9fc; border:1px solid #e9ecf2; }
+    .mvp-block h3 { margin:0 0 10px; font-size:15px; }
+    .mvp-block ul { margin:0; padding-left:18px; color:#59667b; font-size:13px; }
+    .mvp-block.value { background:#eef2ff; border-color:#dae2ff; }
+    .mvp-block.day3 { background:#f3efff; border-color:#e2d9ff; }
+    .mvp-wide { grid-column:1 / -1; }
+    footer { padding:36px 0 44px; color:#7c8698; text-align:center; font-size:12px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    [hidden] { display:none !important; }
+    @media (max-width: 920px) {
+      .nav a { display:none; }
+      .hero-grid, .consult-panel, .upload-grid { grid-template-columns:1fr; }
+      .hero { padding-top:64px; }
+      .hero-demo { max-width:620px; }
+      .query-side { border-right:0; border-bottom:1px solid var(--line); }
+      .process-list { grid-template-columns:repeat(3,1fr); }
+      .parse-grid { grid-template-columns:repeat(2,1fr); }
+      .cards { grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      .shell { width:min(100% - 22px, 1180px); }
+      .topbar-inner { min-height:58px; }
+      .brand-text { font-size:13px; }
+      .hero { padding:52px 0 42px; }
+      h1 { font-size:38px; }
+      .hero-copy { font-size:16px; }
+      .section { padding:28px 0; }
+      .section-head { display:block; }
+      .section-desc { margin-top:10px; }
+      .form-grid, .cards, .conflict-analysis, .nearest-grid, .mvp-grid { grid-template-columns:1fr; }
+      .field-wide, .mvp-wide { grid-column:auto; }
+      .process-list { grid-template-columns:1fr 1fr; }
+      .parse-grid { grid-template-columns:1fr; }
+      .mvp-top, .mvp-user { grid-template-columns:1fr; }
+      .mvp-body, .mvp-top, .agent-panel, .compare-panel, .upload-box, .parse-result-box { padding:20px; }
+      .query-side, .control-side { padding:21px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="brand-mark">智</span><span class="brand-text">智选本 · Shopping Agent</span></div>
+      <nav class="nav" aria-label="页面导航">
+        <a href="#consult">智能咨询</a><a href="#compare">商品对比</a><a href="#multimodal">截图解析</a><a href="#mvp">MVP 定义</a>
+        <span class="prototype-pill">Day 2 交互原型</span>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <div class="eyebrow">AI 智能导购决策</div>
+        <h1>让复杂参数，变成<span class="gradient-text">清晰选择</span></h1>
+        <p class="hero-copy">基于多模态 RAG 与约束推理的电商智能导购 Agent，把自然语言需求转成可验证条件，为笔记本选购提供筛选、排序、冲突分析与对比支持。</p>
+        <div class="capabilities" aria-label="能力标签">
+          <span class="chip">多模态输入</span><span class="chip">RAG 检索</span><span class="chip">约束推理</span><span class="chip">决策辅助</span>
+        </div>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#consult" style="text-decoration:none">开始体验</a>
+          <span class="prototype-pill">无需 API Key · 双击即用</span>
+        </div>
+        <div class="notice-band"><strong>演示声明</strong><span>当前商品均为 mock 演示数据，价格不代表实时市场价格；本页为 Day 2 交互原型，Day 3 才接入真实模型 API 与后端能力。</span></div>
+      </div>
+      <div class="hero-demo" aria-label="Agent 工作流预览">
+        <div class="mini-head"><span class="mini-title">需求 → 决策</span><span class="signal">确定性原型就绪</span></div>
+        <div class="mini-query">“预算 7000 元以内，主要写代码，希望轻便，至少 16GB 内存。”</div>
+        <div class="flow">
+          <div class="flow-row"><span class="flow-num">1</span><span>识别预算与内存硬约束</span></div>
+          <div class="flow-row"><span class="flow-num">2</span><span>将“轻便”保留为软偏好</span></div>
+          <div class="flow-row"><span class="flow-num">3</span><span>按编程场景进行可复现排序</span></div>
+        </div>
+        <div class="mini-result"><div class="laptop-icon">PC</div><div><strong>华硕 Zen 14 Mock</strong><small>32GB · 1TB · 1.20kg</small></div><span class="match">高匹配</span></div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="section" id="consult">
+      <div class="shell">
+        <div class="section-head"><div><div class="section-index">01 · SMART CONSULTATION</div><h2>先理解你，再筛选商品</h2></div><p class="section-desc">自然语言和结构化控件共同形成需求。数字与强限制用于过滤，模糊表达只影响排序。</p></div>
+        <div class="panel consult-panel">
+          <div class="query-side">
+            <label for="query">描述你的购买需求</label>
+            <textarea id="query" data-testid="query-input" placeholder="例如：预算 7000 元以内，主要写代码和做数据分析，希望轻便一点，至少 16GB 内存。"></textarea>
+            <div class="examples" aria-label="快捷示例">
+              <button class="example-btn" data-example="A" data-testid="example-a"><span class="example-label">A</span>编程开发 + 预算 + 便携</button>
+              <button class="example-btn" data-example="B" data-testid="example-b"><span class="example-label">B</span>游戏场景 + 独显 + 内存</button>
+              <button class="example-btn" data-example="C" data-testid="example-c"><span class="example-label">C</span>冲突条件 + RTX 4060 + 轻重量</button>
+            </div>
+          </div>
+          <div class="control-side">
+            <div class="form-grid">
+              <div><label for="budget">预算上限（元）</label><input id="budget" data-testid="budget-input" type="number" min="0" step="100" placeholder="不限"></div>
+              <div><label for="ram">最低内存</label><select id="ram" data-testid="ram-select"><option value="0">不限</option><option value="8">8GB</option><option value="16">16GB</option><option value="32">32GB</option><option value="64">64GB</option></select></div>
+              <div class="field-wide"><label for="scene">主要使用场景</label><select id="scene" data-testid="scene-select"><option value="办公学习">办公学习</option><option value="编程开发/数据分析">编程开发 / 数据分析</option><option value="AI/深度学习">AI / 深度学习</option><option value="游戏娱乐">游戏娱乐</option><option value="视频剪辑/设计创作">视频剪辑 / 设计创作</option></select></div>
+              <div><label for="portable">便携性偏好</label><select id="portable" data-testid="portable-select"><option value="medium">一般</option><option value="high">比较重视</option><option value="low">不太在意</option></select></div>
+              <div><label>显卡要求</label><div class="toggle-line"><span>必须独显</span><label class="switch" aria-label="必须独立显卡"><input id="gpuRequired" data-testid="gpu-toggle" type="checkbox"><span class="slider"></span></label></div></div>
+            </div>
+            <div class="form-actions">            <button id="recommendBtn" data-testid="recommend-button" class="btn btn-primary">开始推荐</button><button id="resetBtn" data-testid="reset-button" class="btn btn-secondary">重置</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="agent-process">
+      <div class="shell">
+        <div class="section-head"><div><div class="section-index">02 · AGENT TRACE</div><h2>看得懂的处理过程</h2></div><p class="section-desc">这里展示的是前端原型流程，不代表已调用真实大模型。</p></div>
+        <div class="panel agent-panel">
+          <div class="process-list" id="processList" aria-live="polite">
+            <div class="process-step" data-step="1">理解购买意图</div><div class="process-step" data-step="2">提取约束与偏好</div><div class="process-step" data-step="3">筛选符合商品</div><div class="process-step" data-step="4">场景化排序</div><div class="process-step" data-step="5">生成推荐依据</div><div class="process-step" data-step="6">推荐完成</div>
+          </div>
+          <div class="parse-card" id="parseCard" data-testid="parse-card" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="recommendations">
+      <div class="shell">
+        <div class="section-head"><div><div class="section-index">03 · RECOMMENDATIONS</div><h2>推荐与取舍，一起说明</h2></div><p class="section-desc">Top 3 来自浏览器内的确定性过滤和场景排序，不依赖后端。</p></div>
+        <div id="resultMeta" class="result-meta" hidden></div>
+        <div id="results" class="cards" data-testid="results"><div class="empty-state" style="grid-column:1/-1">填写需求并开始推荐后，这里会展示匹配商品。</div></div>
+      </div>
+    </section>
+
+    <section class="section" id="conflict-section">
+      <div class="shell">
+        <div class="conflict" id="conflictPanel" data-testid="conflict-panel" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section" id="compare">
+      <div class="shell">
+        <div class="section-head"><div><div class="section-index">04 · SIDE-BY-SIDE</div><h2>把差异放在一张表里</h2></div><p class="section-desc">从推荐结果中选择 2–3 款，快速看清性能、便携与预算取舍。</p></div>
+        <div class="panel compare-panel">
+          <div class="compare-toolbar"><div><strong>已选 <span id="compareCount">0</span> / 3</strong><div class="compare-selected" id="compareSelected"><span style="color:var(--muted);font-size:12px">尚未选择商品</span></div></div><button id="clearCompare" data-testid="clear-compare" class="btn btn-danger">清空对比</button></div>
+          <div id="compareContent" data-testid="compare-content"><div class="empty-state">至少加入 2 款商品后，将自动生成对比表和简短结论。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="multimodal">
+      <div class="shell">
+        <div class="section-head"><div><div class="section-index">05 · MULTIMODAL MOCKUP</div><h2>上传截图，连接商品上下文</h2></div><p class="section-desc">上传与预览是真实前端交互；参数解析结果仅为原型模拟。</p></div>
+        <div class="upload-grid">
+          <div class="panel upload-box">
+            <div class="dropzone" id="dropzone" data-testid="image-preview"><div id="uploadPrompt"><div class="upload-icon">↑</div><p>选择商品详情页或参数截图</p><label for="imageInput" class="btn btn-ghost" style="display:inline-block;margin:0">选择图片</label></div><img id="previewImage" alt="所选商品截图预览" hidden></div>
+            <input id="imageInput" data-testid="image-input" type="file" accept="image/*">
+            <button id="parseImageBtn" data-testid="parse-image" class="btn btn-primary" style="width:100%;margin-top:14px" disabled>解析商品截图</button>
+          </div>
+          <div class="panel parse-result-box">
+            <div class="parse-placeholder" id="parsePlaceholder">选择图片后点击“解析商品截图”，这里将展示模拟参数与 SKU 匹配结果。</div>
+            <div class="parsed-result" id="parsedResult" data-testid="parsed-result"></div>
+          </div>
+        </div>
+        <div class="prototype-note">当前为多模态能力原型模拟，尚未接入真实视觉模型。Day 3 将通过多模态模型 API 完成截图参数提取和 SKU 匹配。</div>
+      </div>
+    </section>
+
+    <section class="section" id="mvp">
+      <div class="shell">
+        <div class="mvp-card" data-testid="mvp-card">
+          <div class="mvp-top"><div><div class="section-index" style="color:#dbe3ff">DAY 2 · MVP DEFINITION CARD</div><h2>基于多模态 RAG 与约束推理的电商智能导购 Agent</h2><p>把自然语言购买需求转化为可验证的商品约束，通过筛选、排序、对比和冲突分析，帮助用户作出更清晰的购买决策。</p></div><div class="mvp-stamp">笔记本电脑 · 第一版</div></div>
+          <div class="mvp-body">
+            <div class="mvp-user"><div class="mvp-label">目标用户</div><p>面对大量参数和商品选项、缺少专业购买知识的大学生及年轻职场用户。</p></div>
+            <div class="mvp-grid">
+              <div class="mvp-block"><h3>核心痛点</h3><ul><li>商品信息分散，参数难以理解</li><li>普通搜索难以准确处理预算和配置限制</li><li>推荐理由缺乏证据</li><li>多款商品难以快速比较</li></ul></div>
+              <div class="mvp-block value"><h3>核心价值</h3><ul><li>自然语言需求转成可验证约束</li><li>区分硬约束和模糊软偏好</li><li>给出推荐依据与现实取舍</li><li>无完全匹配时解释冲突</li></ul></div>
+              <div class="mvp-block"><h3>MVP 功能</h3><ul><li>自然语言需求输入与约束识别</li><li>场景化推荐与推荐依据</li><li>冲突分析与最接近候选</li><li>多商品对比</li><li>商品截图上传与解析原型</li></ul></div>
+              <div class="mvp-block"><h3>暂不实现</h3><ul><li>实时抓取、实时价格、自动下单</li><li>登录注册、语音交互</li><li>大量商品品类</li><li>自训练多模态模型</li><li>复杂多 Agent 群聊</li></ul></div>
+              <div class="mvp-block mvp-wide"><h3>核心验证目标</h3><ul><li>用户能否更快找到满足条件的商品</li><li>推荐是否遵守硬约束</li><li>推荐理由是否容易理解</li><li>商品对比与冲突解释是否有助于决策</li></ul></div>
+              <div class="mvp-block day3 mvp-wide"><h3>Day 3 升级计划</h3><ul><li>接入真实 LLM API，实现结构化约束提取与软偏好识别</li><li>接入 RAG 检索，使用真实商品知识库进行证据检索</li><li>接入多模态模型，完成截图参数提取与 SKU 匹配</li><li>增加流式输出与部署，形成可访问的真实 AI 应用</li></ul></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="shell">Day 2 单文件交互原型 · 所有商品与证据均为教学演示数据 · 价格不代表实时市场价格</div></footer>
+
+  <script>
+    "use strict";
+
+    const products = [
+      {skuId:"lenovo_ideapad14_mock_16_512",brand:"联想",model:"IdeaPad 14 Mock 16GB 512GB",category:"轻薄本",price:3999,cpu:"Ryzen 5 Mock",gpuType:"核显",gpu:"Radeon Mock",vram:0,ram:16,storage:512,screen:"14.0英寸 · 1920x1200 · 60Hz",weight:1.38,battery:60,cpuScore:.55,gpuScore:.20,portability:.82,batteryScore:.50,scenarios:["办公学习","编程开发/数据分析"],tradeoff:"性能定位偏入门，更适合日常负载"},
+      {skuId:"asus_zen14_mock_32_1024",brand:"华硕",model:"Zen 14 Mock 32GB 1TB",category:"轻薄本",price:6999,cpu:"Core Ultra 7 Mock",gpuType:"核显",gpu:"Arc Mock",vram:0,ram:32,storage:1024,screen:"14.0英寸 · 2880x1800 · 120Hz",weight:1.20,battery:75,cpuScore:.76,gpuScore:.34,portability:.92,batteryScore:.75,scenarios:["办公学习","编程开发/数据分析"],tradeoff:"没有独显，不适合重度 GPU 任务"},
+      {skuId:"huawei_mate14_mock_16_1024",brand:"华为",model:"Mate 14 Mock 16GB 1TB",category:"轻薄本",price:5799,cpu:"Core Ultra 5 Mock",gpuType:"核显",gpu:"Arc Mock",vram:0,ram:16,storage:1024,screen:"14.2英寸 · 2880x1920 · 120Hz",weight:1.31,battery:70,cpuScore:.68,gpuScore:.30,portability:.87,batteryScore:.68,scenarios:["办公学习"],tradeoff:"16GB 内存应对大型数据任务余量有限"},
+      {skuId:"apple_air13_mock_16_512",brand:"苹果",model:"Air 13 Mock 16GB 512GB",category:"轻薄本",price:8999,cpu:"M Mock",gpuType:"核显",gpu:"Apple GPU Mock",vram:0,ram:16,storage:512,screen:"13.6英寸 · 2560x1664 · 60Hz",weight:1.24,battery:52,cpuScore:.80,gpuScore:.48,portability:.90,batteryScore:.45,scenarios:["办公学习","编程开发/数据分析","视频剪辑/设计创作"],tradeoff:"价格较高，且需确认软件对 macOS 的兼容性"},
+      {skuId:"lenovo_thinkbook16_mock_32_1024",brand:"联想",model:"ThinkBook 16+ Mock 32GB 1TB",category:"全能本",price:6499,cpu:"Ryzen 7 Mock",gpuType:"核显",gpu:"Radeon 780M Mock",vram:0,ram:32,storage:1024,screen:"16.0英寸 · 2560x1600 · 120Hz",weight:1.80,battery:71,cpuScore:.78,gpuScore:.40,portability:.60,batteryScore:.70,scenarios:["办公学习","编程开发/数据分析"],tradeoff:"16 英寸机身的通勤便携性一般"},
+      {skuId:"dell_inspiron16_mock_32_1024_4050",brand:"戴尔",model:"Inspiron 16 Plus Mock RTX 4050 32GB",category:"全能本",price:7499,cpu:"Core Ultra 7 Mock H",gpuType:"独立显卡",gpu:"RTX 4050 Mock",vram:6,ram:32,storage:1024,screen:"16.0英寸 · 2560x1600 · 120Hz",weight:1.90,battery:86,cpuScore:.80,gpuScore:.68,portability:.55,batteryScore:.88,scenarios:["游戏娱乐","视频剪辑/设计创作"],tradeoff:"独显带来性能，也增加了重量"},
+      {skuId:"acer_swiftx14_mock_32_1024_4050",brand:"宏碁",model:"Swift X 14 Mock RTX 4050 32GB",category:"全能本",price:7999,cpu:"Ryzen 9 Mock HS",gpuType:"独立显卡",gpu:"RTX 4050 Mock",vram:6,ram:32,storage:1024,screen:"14.5英寸 · 2880x1800 · 120Hz",weight:1.55,battery:76,cpuScore:.84,gpuScore:.64,portability:.73,batteryScore:.76,scenarios:["编程开发/数据分析","视频剪辑/设计创作"],tradeoff:"轻量机身下的独显性能释放相对保守"},
+      {skuId:"lenovo_legion15_mock_32_1024_4060",brand:"联想",model:"Legion 15 Mock RTX 4060 32GB",category:"游戏本",price:7999,cpu:"Core i7 Mock HX",gpuType:"独立显卡",gpu:"RTX 4060 Mock",vram:8,ram:32,storage:1024,screen:"15.6英寸 · 2560x1600 · 165Hz",weight:2.40,battery:80,cpuScore:.88,gpuScore:.82,portability:.28,batteryScore:.80,scenarios:["AI/深度学习","游戏娱乐","视频剪辑/设计创作"],tradeoff:"性能优先，2.40kg 不适合高频通勤"},
+      {skuId:"asus_tuf15_mock_16_1024_4060",brand:"华硕",model:"TUF 15 Mock RTX 4060 16GB",category:"游戏本",price:6999,cpu:"Ryzen 7 Mock HS",gpuType:"独立显卡",gpu:"RTX 4060 Mock",vram:8,ram:16,storage:1024,screen:"15.6英寸 · 1920x1080 · 144Hz",weight:2.20,battery:70,cpuScore:.76,gpuScore:.78,portability:.35,batteryScore:.68,scenarios:["AI/深度学习","游戏娱乐"],tradeoff:"16GB 内存够用，但重度创作升级空间更重要"},
+      {skuId:"hp_omen16_mock_64_2048_4070",brand:"惠普",model:"Omen 16 Mock RTX 4070 64GB 2TB",category:"游戏本",price:12999,cpu:"Core i9 Mock HX",gpuType:"独立显卡",gpu:"RTX 4070 Mock",vram:8,ram:64,storage:2048,screen:"16.1英寸 · 2560x1600 · 240Hz",weight:2.55,battery:83,cpuScore:.96,gpuScore:.92,portability:.22,batteryScore:.84,scenarios:["AI/深度学习","游戏娱乐","视频剪辑/设计创作"],tradeoff:"性能强，但预算和重量压力最大"}
+    ];
+
+    const sceneWeights = {
+      "办公学习": {cpu:.20,gpu:.05,ram:.25,battery:.30,weight:.15,price:.05},
+      "编程开发/数据分析": {cpu:.25,gpu:.10,ram:.30,battery:.15,weight:.10,price:.10},
+      "AI/深度学习": {cpu:.15,gpu:.35,ram:.30,battery:.05,weight:.05,price:.10},
+      "游戏娱乐": {cpu:.20,gpu:.35,ram:.15,battery:.10,weight:.05,price:.15},
+      "视频剪辑/设计创作": {cpu:.20,gpu:.30,ram:.25,battery:.10,weight:.05,price:.10}
+    };
+
+    const examples = {
+      A: {text:"预算7000元以内，主要写代码和做数据分析，希望轻便一点，至少16GB内存。",budget:7000,ram:"16",gpu:false,scene:"编程开发/数据分析",portable:"high"},
+      B: {text:"想买一台游戏本，必须独显，内存至少16GB，预算8000元以内。",budget:8000,ram:"16",gpu:true,scene:"游戏娱乐",portable:"low"},
+      C: {text:"预算5000元以内，必须RTX 4060，重量不超过1.2kg。",budget:5000,ram:"0",gpu:true,scene:"游戏娱乐",portable:"high"}
+    };
+
+    const state = { compareIds: [], imageUrl: null, runningToken: 0 };
+    const $ = (id) => document.getElementById(id);
+    const formatMoney = (value) => new Intl.NumberFormat("zh-CN").format(value);
+    const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[char]);
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    function parseNaturalLanguage(text) {
+      const result = { budget:null, ram:null, weightMax:null, gpuModel:null, gpuRequired:false };
+      const budgetMatch = text.match(/(?:预算|不超过|最多)[^\d]{0,5}(\d{4,5})\s*元?|(?:\d{4,5})\s*元?以内/);
+      if (budgetMatch) result.budget = Number(budgetMatch[1] || (text.match(/(\d{4,5})\s*元?以内/) || [])[1]);
+      const ramMatch = text.match(/(?:至少|最低|不低于)?\s*(8|16|32|64)\s*(?:GB|G)\s*(?:内存)?/i);
+      if (ramMatch) result.ram = Number(ramMatch[1]);
+      const weightMatch = text.match(/(?:重量)?\s*(?:不超过|低于|小于|≤|<)\s*(\d+(?:\.\d+)?)\s*(?:kg|公斤)/i);
+      if (weightMatch) result.weightMax = Number(weightMatch[1]);
+      const gpuMatch = text.match(/RTX\s*(4050|4060|4070)/i);
+      if (gpuMatch) { result.gpuModel = `RTX ${gpuMatch[1]}`; result.gpuRequired = true; }
+      if (/必须[^，。]{0,8}(?:独显|独立显卡)/.test(text)) result.gpuRequired = true;
+      return result;
+    }
+
+    function getRequest() {
+      const text = $("query").value.trim();
+      const parsed = parseNaturalLanguage(text);
+      const controlBudget = Number($("budget").value) || null;
+      const controlRam = Number($("ram").value) || null;
+      return {
+        text,
+        budget: controlBudget || parsed.budget,
+        ram: controlRam || parsed.ram,
+        gpuRequired: $("gpuRequired").checked || parsed.gpuRequired,
+        gpuModel: parsed.gpuModel,
+        weightMax: parsed.weightMax,
+        scene: $("scene").value,
+        portability: $("portable").value
+      };
+    }
+
+    function constraintChecks(product, request) {
+      const checks = [];
+      if (request.budget) checks.push({field:"预算上限",pass:product.price <= request.budget,required:request.budget,actual:product.price,type:"budget"});
+      if (request.ram) checks.push({field:"最低内存",pass:product.ram >= request.ram,required:request.ram,actual:product.ram,type:"ram"});
+      if (request.gpuRequired) checks.push({field:"必须独显",pass:product.gpuType === "独立显卡",required:true,actual:product.gpuType,type:"gpu"});
+      if (request.gpuModel) checks.push({field:`必须 ${request.gpuModel}`,pass:product.gpu.includes(request.gpuModel),required:request.gpuModel,actual:product.gpu,type:"gpuModel"});
+      if (request.weightMax) checks.push({field:"重量上限",pass:product.weight <= request.weightMax,required:request.weightMax,actual:product.weight,type:"weight"});
+      return checks;
+    }
+
+    function scoreProduct(product, request) {
+      const weights = {...sceneWeights[request.scene]};
+      if (request.portability === "high") weights.weight *= 1.3;
+      if (request.portability === "low") weights.weight *= .8;
+      const sum = Object.values(weights).reduce((a,b) => a+b, 0);
+      Object.keys(weights).forEach(key => weights[key] /= sum);
+      const ramScore = Math.min(Math.max((product.ram - 8) / 56, 0), 1);
+      const performance = product.cpuScore * .45 + product.gpuScore * .35 + ramScore * .20;
+      const dimensions = {cpu:product.cpuScore,gpu:product.gpuScore,ram:ramScore,battery:product.batteryScore,weight:product.portability,price:Math.min(performance * 6000 / Math.max(product.price,1),1)};
+      let total = Object.keys(weights).reduce((acc,key) => acc + weights[key] * dimensions[key], 0);
+      if (product.scenarios.includes(request.scene)) total += .04;
+      return Math.min(Math.max(total,0),1);
+    }
+
+    function diversityTop3(items) {
+      const selected = [], deferred = [], brandCounts = {};
+      for (const item of items) {
+        const count = brandCounts[item.product.brand] || 0;
+        if (count < 2) { selected.push(item); brandCounts[item.product.brand] = count + 1; }
+        else deferred.push(item);
+        if (selected.length === 3) break;
+      }
+      if (selected.length < 3) selected.push(...deferred.slice(0, 3-selected.length));
+      return selected;
+    }
+
+    function search(request) {
+      const evaluated = products.map(product => ({product,checks:constraintChecks(product,request),score:scoreProduct(product,request)}));
+      const exact = evaluated.filter(item => item.checks.every(check => check.pass)).sort((a,b) => b.score-a.score || a.product.skuId.localeCompare(b.product.skuId));
+      if (exact.length) return {mode:"normal", exactCount:exact.length, items:diversityTop3(exact)};
+      const nearest = evaluated.filter(item => item.checks.some(check => !check.pass)).map(item => ({...item,violations:item.checks.filter(check => !check.pass)}));
+      nearest.forEach(item => {
+        item.cost = item.violations.reduce((cost, violation) => cost + violationMagnitude(violation), 0);
+        item.critical = item.violations.some(v => v.type === "gpu" || v.type === "gpuModel");
+      });
+      nearest.sort((a,b) => a.violations.length-b.violations.length || Number(a.critical)-Number(b.critical) || a.cost-b.cost || b.score-a.score);
+      return {mode:"nearest", exactCount:0, items:nearest.slice(0,2), all:evaluated};
+    }
+
+    function violationMagnitude(v) {
+      if (v.type === "budget") return Math.min(Math.max((v.actual-v.required)/Math.max(v.required,1),0),2);
+      if (v.type === "ram") return Math.min(Math.max((v.required-v.actual)/Math.max(v.required,1),0),2);
+      if (v.type === "weight") return Math.min(Math.max((v.actual-v.required)/Math.max(v.required,1),0),2);
+      return 1;
+    }
+
+    function humanConstraint(check) {
+      if (check.type === "budget") return check.pass ? `预算内（${formatMoney(check.actual)} 元）` : `超预算 ${formatMoney(check.actual-check.required)} 元`;
+      if (check.type === "ram") return check.pass ? `内存达到 ${check.actual}GB` : `内存低于要求 ${check.required-check.actual}GB`;
+      if (check.type === "gpu") return check.pass ? "配备独立显卡" : "仅配备核显";
+      if (check.type === "gpuModel") return check.pass ? `显卡满足 ${check.required}` : `显卡为 ${check.actual}，不满足 ${check.required}`;
+      if (check.type === "weight") return check.pass ? `重量不超过 ${check.required}kg` : `重量高出 ${(check.actual-check.required).toFixed(2)}kg`;
+      return check.field;
+    }
+
+    function recommendationReasons(item, request) {
+      const product = item.product, reasons = [];
+      if (request.budget && product.price <= request.budget) reasons.push(`演示价格在 ${formatMoney(request.budget)} 元预算内`);
+      if (product.ram >= 32 && request.scene === "编程开发/数据分析") reasons.push(`${product.ram}GB 内存适合 IDE、多任务和数据分析`);
+      else if (request.ram) reasons.push(`${product.ram}GB 内存满足最低要求`);
+      if (product.gpuType === "独立显卡" && ["游戏娱乐","AI/深度学习","视频剪辑/设计创作"].includes(request.scene)) reasons.push(`${product.gpu} 更适合当前场景的图形或计算负载`);
+      if (request.portability === "high" && product.weight <= 1.55) reasons.push(`${product.weight.toFixed(2)}kg，通勤携带压力较低`);
+      if (product.scenarios.includes(request.scene)) reasons.push(`商品演示标签与“${request.scene}”场景匹配`);
+      reasons.push(`取舍：${product.tradeoff}`);
+      return reasons.slice(0,4);
+    }
+
+    function renderParseCard(request, count) {
+      const hard = [];
+      if (request.budget) hard.push(`预算 ≤ ${formatMoney(request.budget)} 元`);
+      if (request.ram) hard.push(`内存 ≥ ${request.ram}GB`);
+      if (request.gpuRequired) hard.push("必须独显");
+      if (request.gpuModel) hard.push(`显卡必须 ${request.gpuModel}`);
+      if (request.weightMax) hard.push(`重量 ≤ ${request.weightMax}kg`);
+      const soft = [`便携性：${request.portability === "high" ? "比较重视" : request.portability === "low" ? "不太在意" : "一般"}`];
+      $("parseCard").innerHTML = `<strong>需求解析卡</strong><div class="parse-grid"><div class="parse-item"><small>识别意图</small><strong>购买推荐</strong></div><div class="parse-item"><small>使用场景</small><strong>${escapeHtml(request.scene)}</strong></div><div class="parse-item"><small>硬约束</small><strong>${hard.length ? hard.map(escapeHtml).join(" · ") : "未设置"}</strong></div><div class="parse-item"><small>软偏好</small><strong>${soft.map(escapeHtml).join(" · ")}</strong></div><div class="parse-item"><small>当前候选</small><strong>${count} 款完全满足</strong></div></div>`;
+      $("parseCard").classList.add("show");
+    }
+
+    function renderResults(searchResult, request) {
+      const conflict = $("conflictPanel");
+      if (searchResult.mode === "nearest") {
+        $("resultMeta").hidden = true;
+        $("results").innerHTML = `<div class="empty-state" style="grid-column:1/-1">正常推荐区保持为空：当前不存在完全满足全部硬约束的商品。</div>`;
+        renderConflict(searchResult, request);
+        return;
+      }
+      conflict.classList.remove("show"); conflict.innerHTML = "";
+      $("resultMeta").hidden = false;
+      $("resultMeta").innerHTML = `<div><strong>Top ${searchResult.items.length} 推荐</strong><div class="result-count">10 款演示商品中有 ${searchResult.exactCount} 款完全满足硬约束</div></div><span class="prototype-pill">确定性前端排序</span>`;
+      $("results").innerHTML = searchResult.items.map((item,index) => productCard(item,index,request)).join("");
+      bindCompareButtons();
+    }
+
+    function productCard(item, index, request) {
+      const p = item.product;
+      const reasons = recommendationReasons(item,request).map(reason => `<li>${escapeHtml(reason)}</li>`).join("");
+      const selected = state.compareIds.includes(p.skuId);
+      return `<article class="product-card" data-sku="${p.skuId}"><div class="product-visual"><div class="product-monogram">${escapeHtml(p.brand.slice(0,2))}</div><span class="rank">TOP ${index+1}</span></div><div class="product-body"><div class="product-kicker"><span>${escapeHtml(p.category)} · Mock SKU</span><span class="evidence-tag">事实参数</span></div><h3>${escapeHtml(p.brand)} ${escapeHtml(p.model)}</h3><div class="price">¥${formatMoney(p.price)} <small>演示价格</small></div><div class="specs"><div class="spec"><small>CPU</small><span title="${escapeHtml(p.cpu)}">${escapeHtml(p.cpu)}</span></div><div class="spec"><small>GPU</small><span title="${escapeHtml(p.gpu)}">${escapeHtml(p.gpu)}</span></div><div class="spec"><small>内存 / 存储</small><span>${p.ram}GB / ${p.storage >= 1024 ? p.storage/1024 + "TB" : p.storage + "GB"}</span></div><div class="spec"><small>重量 / 屏幕</small><span>${p.weight.toFixed(2)}kg / ${escapeHtml(p.screen.split(" · ")[0])}</span></div></div><ul class="reason">${reasons}</ul><div class="card-bottom"><div class="match-score"><strong>${Math.round(item.score*100)}%</strong><small>原型匹配度</small></div><button class="compare-btn${selected ? " selected" : ""}" data-compare-id="${p.skuId}" data-testid="compare-${p.skuId}">${selected ? "已加入对比" : "加入对比"}</button></div></div></article>`;
+    }
+
+    function renderConflict(searchResult, request) {
+      const failedTypes = new Set(searchResult.items.flatMap(item => item.violations.map(v => v.type)));
+      const causes = [];
+      if (failedTypes.has("budget")) causes.push(`预算上限 ${formatMoney(request.budget)} 元与目标配置存在冲突`);
+      if (failedTypes.has("weight")) causes.push(`重量上限 ${request.weightMax}kg 对独显机型过于严格`);
+      if (failedTypes.has("gpuModel")) causes.push(`${request.gpuModel} 的商品范围较窄`);
+      if (failedTypes.has("ram")) causes.push(`最低 ${request.ram}GB 内存压缩了候选范围`);
+      const suggestions = [];
+      if (request.budget) suggestions.push("适当提高预算上限");
+      if (request.weightMax) suggestions.push("放宽重量，或改选高性能核显轻薄本");
+      if (request.gpuModel) suggestions.push(`将指定 ${request.gpuModel} 改为“需要独显”`);
+      const cards = searchResult.items.map(item => {
+        const passes = item.checks.filter(c => c.pass).map(c => `<div class="pass-line">满足 · ${escapeHtml(humanConstraint(c))}</div>`).join("") || `<div class="pass-line">暂无满足的已提取条件</div>`;
+        const fails = item.violations.map(c => `<div class="fail-line">不满足 · ${escapeHtml(humanConstraint(c))}</div>`).join("");
+        return `<div class="nearest-card"><span class="not-exact">最接近候选 · 非完全符合</span><h4>${escapeHtml(item.product.brand)} ${escapeHtml(item.product.model)}</h4><div style="color:var(--muted);font-size:12px">¥${formatMoney(item.product.price)} · ${item.product.weight.toFixed(2)}kg · ${escapeHtml(item.product.gpu)}</div><div class="constraint-lines">${passes}${fails}</div></div>`;
+      }).join("");
+      $("conflictPanel").innerHTML = `<div class="conflict-head"><div class="conflict-mark">!</div><div>      <h3>当前没有完全符合全部条件的商品</h3><p>未满足硬约束的商品不会出现在常规推荐中。下方单独展示冲突原因与最多 2 款最接近候选，并标注每项约束的满足情况。</p></div></div><div class="conflict-analysis"><div class="analysis-box"><strong>主要冲突</strong><ul>${causes.map(c=>`<li>${escapeHtml(c)}</li>`).join("")}</ul></div><div class="analysis-box"><strong>建议放宽方向</strong><ul>${suggestions.map(s=>`<li>${escapeHtml(s)}</li>`).join("")}</ul></div></div><div class="nearest-grid">${cards}</div>`;
+      $("conflictPanel").classList.add("show");
+    }
+
+    function bindCompareButtons() {
+      document.querySelectorAll("[data-compare-id]").forEach(button => button.addEventListener("click", () => toggleCompare(button.dataset.compareId)));
+    }
+
+    function toggleCompare(skuId) {
+      const index = state.compareIds.indexOf(skuId);
+      if (index >= 0) state.compareIds.splice(index,1);
+      else if (state.compareIds.length < 3) state.compareIds.push(skuId);
+      else { window.alert("最多可同时对比 3 款商品。请先移除一款。"); return; }
+      document.querySelectorAll(`[data-compare-id="${skuId}"]`).forEach(button => { const selected = state.compareIds.includes(skuId); button.classList.toggle("selected",selected); button.textContent = selected ? "已加入对比" : "加入对比"; });
+      renderCompare();
+    }
+
+    function renderCompare() {
+      const selected = state.compareIds.map(id => products.find(product => product.skuId === id)).filter(Boolean);
+      $("compareCount").textContent = selected.length;
+      $("compareSelected").innerHTML = selected.length ? selected.map(p => `<span class="selected-chip">${escapeHtml(p.brand)} ${escapeHtml(p.model.split(" Mock")[0])}<button aria-label="移除 ${escapeHtml(p.model)}" data-remove-id="${p.skuId}">×</button></span>`).join("") : `<span style="color:var(--muted);font-size:12px">尚未选择商品</span>`;
+      document.querySelectorAll("[data-remove-id]").forEach(button => button.addEventListener("click",()=>toggleCompare(button.dataset.removeId)));
+      if (selected.length < 2) { $("compareContent").innerHTML = `<div class="empty-state">至少加入 2 款商品后，将自动生成对比表和简短结论。</div>`; return; }
+      const rows = [
+        ["演示价格", p=>`¥${formatMoney(p.price)}`],["类型",p=>p.category],["CPU",p=>p.cpu],["GPU",p=>p.gpu],["内存",p=>`${p.ram}GB`],["存储",p=>p.storage>=1024?`${p.storage/1024}TB`:`${p.storage}GB`],["重量",p=>`${p.weight.toFixed(2)}kg`],["屏幕",p=>p.screen],["适合场景",p=>p.scenarios.join("、")],["综合取舍",p=>p.tradeoff]
+      ];
+      const header = selected.map(p=>`<th>${escapeHtml(p.brand)}<br>${escapeHtml(p.model.split(" Mock")[0])}</th>`).join("");
+      const body = rows.map(([label,getter])=>`<tr><th>${label}</th>${selected.map(p=>`<td>${escapeHtml(getter(p))}</td>`).join("")}</tr>`).join("");
+      const performance = [...selected].sort((a,b)=>(b.cpuScore+b.gpuScore)-(a.cpuScore+a.gpuScore))[0];
+      const portable = [...selected].sort((a,b)=>a.weight-b.weight)[0];
+      const budget = [...selected].sort((a,b)=>a.price-b.price)[0];
+      $("compareContent").innerHTML = `<div class="table-wrap"><table><thead><tr><th>对比维度</th>${header}</tr></thead><tbody>${body}</tbody></table></div><div class="compare-insight"><strong>快速结论：</strong>性能优先可关注 ${escapeHtml(performance.brand)} ${escapeHtml(performance.model)}；便携优先是 ${escapeHtml(portable.brand)} ${escapeHtml(portable.model)}（${portable.weight.toFixed(2)}kg）；预算优先是 ${escapeHtml(budget.brand)} ${escapeHtml(budget.model)}（¥${formatMoney(budget.price)}）。</div>`;
+    }
+
+    async function runRecommendation() {
+      const token = ++state.runningToken;
+      const request = getRequest();
+      $("recommendBtn").disabled = true;
+      $("parseCard").classList.remove("show");
+      document.querySelectorAll(".process-step").forEach(step => step.classList.remove("active","done"));
+      const steps = [...document.querySelectorAll(".process-step")];
+      for (let i=0;i<steps.length;i++) {
+        if (token !== state.runningToken) return;
+        if (i>0) { steps[i-1].classList.remove("active"); steps[i-1].classList.add("done"); }
+        steps[i].classList.add("active");
+        await sleep(180);
+      }
+      const searchResult = search(request);
+      steps[steps.length-1].classList.remove("active"); steps[steps.length-1].classList.add("done");
+      renderParseCard(request, searchResult.exactCount);
+      renderResults(searchResult, request);
+      $("recommendBtn").disabled = false;
+      $("recommendations").scrollIntoView({behavior:"smooth",block:"start"});
+    }
+
+    function applyExample(key) {
+      const example = examples[key];
+      $("query").value = example.text; $("budget").value = example.budget; $("ram").value = example.ram;
+      $("gpuRequired").checked = example.gpu; $("scene").value = example.scene; $("portable").value = example.portable;
+    }
+
+    function resetAll() {
+      state.runningToken++;
+      $("query").value=""; $("budget").value=""; $("ram").value="0"; $("gpuRequired").checked=false; $("scene").value="办公学习"; $("portable").value="medium";
+      $("recommendBtn").disabled=false; $("parseCard").classList.remove("show"); $("parseCard").innerHTML="";
+      document.querySelectorAll(".process-step").forEach(step=>step.classList.remove("active","done"));
+      $("resultMeta").hidden=true; $("results").innerHTML=`<div class="empty-state" style="grid-column:1/-1">填写需求并开始推荐后，这里会展示匹配商品。</div>`;
+      $("conflictPanel").classList.remove("show"); $("conflictPanel").innerHTML="";
+      state.compareIds=[]; renderCompare();
+      $("imageInput").value="";
+      if (state.imageUrl) { URL.revokeObjectURL(state.imageUrl); state.imageUrl=null; }
+      $("previewImage").src=""; $("previewImage").hidden=true; $("uploadPrompt").hidden=false; $("dropzone").classList.remove("has-image");
+      $("parseImageBtn").disabled=true; $("parseImageBtn").textContent="解析商品截图"; $("parsePlaceholder").hidden=false; $("parsedResult").classList.remove("show"); $("parsedResult").innerHTML="";
+    }
+
+    document.querySelectorAll("[data-example]").forEach(button => button.addEventListener("click",()=>applyExample(button.dataset.example)));
+    $("recommendBtn").addEventListener("click",runRecommendation);
+    $("resetBtn").addEventListener("click",resetAll);
+    $("clearCompare").addEventListener("click",()=>{ state.compareIds=[]; document.querySelectorAll("[data-compare-id]").forEach(button=>{button.classList.remove("selected");button.textContent="加入对比";}); renderCompare(); });
+
+    $("imageInput").addEventListener("change", event => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+      state.imageUrl = URL.createObjectURL(file);
+      $("previewImage").src = state.imageUrl; $("previewImage").hidden=false; $("uploadPrompt").hidden=true; $("dropzone").classList.add("has-image"); $("parseImageBtn").disabled=false;
+      $("parsePlaceholder").hidden=false; $("parsedResult").classList.remove("show");
+    });
+
+    $("parseImageBtn").addEventListener("click", async () => {
+      if (!$("imageInput").files.length) return;
+      $("parseImageBtn").disabled=true; $("parseImageBtn").textContent="正在进行原型模拟…";
+      await sleep(420);
+      const mock = products[7];
+      $("parsePlaceholder").hidden=true;
+      $("parsedResult").innerHTML=`<span class="prototype-pill">原型模拟结果</span><h3 style="margin:13px 0 4px">可能匹配：${escapeHtml(mock.brand)} ${escapeHtml(mock.model)}</h3><div class="parsed-grid"><div class="parsed-field"><small>品牌</small><strong>${escapeHtml(mock.brand)}</strong></div><div class="parsed-field"><small>型号</small><strong>${escapeHtml(mock.model)}</strong></div><div class="parsed-field"><small>价格</small><strong>¥${formatMoney(mock.price)}（演示）</strong></div><div class="parsed-field"><small>CPU</small><strong>${escapeHtml(mock.cpu)}</strong></div><div class="parsed-field"><small>GPU</small><strong>${escapeHtml(mock.gpu)}</strong></div><div class="parsed-field"><small>内存</small><strong>${mock.ram}GB</strong></div></div><div class="confidence">SKU 匹配置信度：92%（固定模拟值，并非图片识别结果）</div><div class="prototype-note">系统没有真实读取图片内容。以上字段用于展示 Day 3 接入视觉模型后的交互形式。</div>`;
+      $("parsedResult").classList.add("show"); $("parseImageBtn").disabled=false; $("parseImageBtn").textContent="重新模拟解析";
+    });
+
+    renderCompare();
+  </script>
+</body>
+</html>
