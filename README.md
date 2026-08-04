@@ -11,7 +11,7 @@
 ## 在线地址
 
 - GitHub 项目与在线文档：<https://github.com/DavidLYJ111/laptop-shopping-agent>
-- 在线应用：后端部署完成后补充
+- 在线应用：Vercel 部署完成后补充
 
 ## 产品截图与功能说明
 
@@ -149,7 +149,9 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 
 ## 部署说明
 
-代码和产品文档已上传 GitHub。仓库根目录提供 `render.yaml`，用于让支持 Python 服务的部署平台从 GitHub 构建 FastAPI 应用。部署环境需要设置：
+代码和产品文档已上传 GitHub。推荐在 Vercel 中导入该仓库：根目录的
+`app.py` 是 Vercel 自动识别的 FastAPI 入口。`render.yaml` 保留为 Render
+等常驻 Python 服务平台的备选配置。部署环境需要设置：
 
 - `BAILIAN_API_KEY`
 - `AI_MODEL=qwen-plus`
@@ -175,4 +177,5 @@ GitHub Pages 只能托管静态页面，不能运行本项目的 Python/FastAPI 
 - 没有真实电商抓取、向量数据库、图片解析或实时价格。
 - 图片入口只说明 P1 尚未开放，不会把模拟结果伪装成真实识图。
 - 商品、文档和价格均为课程演示数据。
-- 在线应用链接和真实结果截图将在百炼 Key 与后端部署完成后补充。
+- 在线应用链接将在 Vercel 部署完成后补充；真实模型运行截图已放在
+  `docs/screenshots/`。
