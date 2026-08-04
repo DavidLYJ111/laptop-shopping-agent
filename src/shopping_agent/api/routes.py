@@ -6,10 +6,10 @@ from functools import lru_cache
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from shopping_agent.agent.openai_provider import (
+from shopping_agent.agent.bailian_provider import (
     AIConfigurationError,
     AIServiceError,
-    OpenAIProvider,
+    BailianProvider,
 )
 from shopping_agent.agent.schemas import (
     HealthResponse,
@@ -33,7 +33,7 @@ def get_agent_service() -> ShoppingAgentService:
         valid_sku_ids={product.sku_id for product in products},
     )
     try:
-        provider = OpenAIProvider(settings)
+        provider = BailianProvider(settings)
     except AIConfigurationError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None
     return ShoppingAgentService(

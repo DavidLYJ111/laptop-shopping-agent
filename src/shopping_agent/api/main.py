@@ -13,7 +13,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="笔记本智能导购 Agent",
         version="0.2.0",
-        description="OpenAI Structured Outputs + deterministic search + local evidence RAG",
+        description="Qwen JSON Mode + deterministic search + local evidence RAG",
     )
     app.include_router(router)
 
@@ -28,4 +28,3 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
-

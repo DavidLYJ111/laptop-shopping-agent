@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from shopping_agent.agent.openai_provider import AIServiceError, OpenAIProvider
+from shopping_agent.agent.bailian_provider import AIServiceError, BailianProvider
 from shopping_agent.agent.prompts import load_prompt
 from shopping_agent.agent.schemas import (
     ConflictAnalysis,
@@ -61,7 +61,7 @@ class AgentValidationError(RuntimeError):
 class ShoppingAgentService:
     products: list[Product]
     retriever: EvidenceRetriever
-    provider: OpenAIProvider
+    provider: BailianProvider
 
     def recommend(self, request: RecommendRequest) -> RecommendResponse:
         intent = self._extract_with_one_retry(request)

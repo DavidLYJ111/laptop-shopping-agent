@@ -1,10 +1,10 @@
-"""Run a deliberately separate, billable smoke test against the real OpenAI API."""
+"""Run a separate, billable smoke test against Alibaba Cloud Model Studio."""
 
 from __future__ import annotations
 
 import sys
 
-from shopping_agent.agent.openai_provider import AIConfigurationError, OpenAIProvider
+from shopping_agent.agent.bailian_provider import AIConfigurationError, BailianProvider
 from shopping_agent.agent.schemas import FormConstraints, RecommendRequest
 from shopping_agent.agent.service import ShoppingAgentService
 from shopping_agent.config import DATA_DIR, get_settings
@@ -15,7 +15,7 @@ from shopping_agent.retrieval import EvidenceRetriever
 def main() -> int:
     settings = get_settings()
     if not settings.ai_enabled:
-        print("未执行真实 OpenAI 冒烟测试：请先在 .env 设置 OPENAI_API_KEY。")
+        print("未执行真实百炼冒烟测试：请先在 .env 设置 BAILIAN_API_KEY。")
         return 2
 
     products = load_products(DATA_DIR / "products.jsonl")
@@ -27,11 +27,11 @@ def main() -> int:
         service = ShoppingAgentService(
             products=products,
             retriever=EvidenceRetriever(documents),
-            provider=OpenAIProvider(settings),
+            provider=BailianProvider(settings),
         )
         response = service.recommend(RecommendRequest(
             message="预算 7000 元，用于编程和数据分析，希望便携，内存至少 32GB。",
-            session_id="real-openai-smoke",
+            session_id="real-bailian-smoke",
             form_constraints=FormConstraints(
                 budget_max=7000,
                 ram_min=32,
@@ -42,10 +42,10 @@ def main() -> int:
         print(f"配置错误：{exc}")
         return 2
     except Exception as exc:  # Safe CLI boundary: never print provider internals.
-        print(f"真实 OpenAI 冒烟测试失败：{type(exc).__name__}")
+        print(f"真实百炼冒烟测试失败：{type(exc).__name__}")
         return 1
 
-    print(f"真实 OpenAI 冒烟测试通过：mode={response.search_mode.value}")
+    print(f"真实百炼冒烟测试通过：mode={response.search_mode.value}")
     print("候选 SKU：" + ", ".join(item.sku_id for item in response.recommendations))
     return 0
 

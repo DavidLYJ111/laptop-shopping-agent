@@ -1,30 +1,59 @@
 # 笔记本智能导购 Agent
 
-这是课程项目的 Day 3 可部署版本：用户用自然语言和表单描述购机需求，服务端通过 OpenAI Responses API 的 Structured Outputs 提取约束，复用确定性搜索核心筛选与排序 10 款 mock 笔记本，再从本地 `fact/evidence` 文档中检索证据并生成可校验的推荐说明。
+## 项目简介与产品定位
 
-> 当前商品和文档均为教学用 mock 数据，不代表实时市场价格或已核验商品信息。
+本项目是一款面向笔记本电脑品类的智能导购应用。用户可以用自然语言和表单描述预算、性能、重量、内存及使用场景，系统输出可解释的商品推荐、取舍分析和证据来源。
 
-## 核心链路
+项目采用“模型理解 + 规则决策”的混合架构：阿里云百炼千问负责理解需求和组织自然语言解释，确定性搜索引擎负责硬约束过滤、评分、排名和 nearest 冲突分析，避免让大模型随意决定商品名单。
 
-1. 第一次模型调用只负责意图、硬约束和软偏好的结构化提取。
-2. 表单值以确定性规则覆盖自然语言提取结果。
-3. `search_products` 执行硬过滤、场景评分、品牌多样性重排及 nearest 冲突分析。
-4. 本地检索只允许 `fact` 和 `evidence` 文档进入上下文，排除 `derived`。
-5. 第二次模型调用只为固定候选生成解释，不得改变 SKU 或排名。
-6. 服务端校验 SKU、排名、证据 ID、normal/nearest 语义与 mock 数据声明后才返回前端。
+> 当前 10 款商品和 30 条文档均为教学用 mock 数据，不代表实时市场价格或已核验商品信息。
 
-模型失败、超时、输出不符合 Schema 或确定性校验失败时，每个模型阶段最多纠正重试一次；仍失败则返回安全错误，不回显密钥、系统提示词或原始异常。
+## 在线地址
 
-## 目录
+- GitHub 项目与在线文档：<https://github.com/DavidLYJ111/laptop-shopping-agent>
+- 在线应用：后端部署完成后补充
 
-- `src/shopping_agent/agent/`：结构化 Schema、提示词加载、OpenAI 适配与工作流编排
+## 核心使用流程
+
+1. 用户输入自然语言需求，也可以填写预算、内存、场景和重量等表单条件。
+2. 第一次千问调用通过 JSON Mode 提取意图、硬约束和软偏好，结果必须通过 Pydantic 校验。
+3. 表单中的明确条件以确定性规则覆盖模型提取结果。
+4. `search_products` 执行硬约束过滤、场景评分、品牌多样性重排和 Top 3 输出。
+5. 若没有完全满足的商品，系统返回最多 2 个 nearest 候选并列出违反条件。
+6. 本地检索只允许 `fact` 和 `evidence` 文档进入模型上下文，排除 `derived`。
+7. 第二次千问调用只为固定候选生成推荐解释，不得修改 SKU 或排名。
+8. 服务端校验 SKU、排名、证据 ID、normal/nearest 语义和 mock 数据声明后返回页面。
+
+## AI 如何介入
+
+AI 只参与两个受约束阶段：
+
+- 需求理解：把自然语言转换为 `IntentResult`，模糊表达保持为软偏好，不能擅自生成硬约束。
+- 推荐表达：根据固定商品候选和实际检索证据生成推荐理由、取舍与比较总结。
+
+商品过滤、候选名单、排名、违约数量和违反幅度全部由确定性 Python 代码计算。两个模型阶段都使用 JSON Mode，并经过 Pydantic Schema 校验；失败时最多纠正重试一次，不会无限调用模型或回退到伪装的模拟推荐。
+
+## 技术栈
+
+- 前端：单文件 HTML、CSS、JavaScript、Fetch API
+- 后端：Python、FastAPI、Uvicorn
+- 模型：阿里云百炼通义千问 `qwen-plus`
+- 模型协议：OpenAI 兼容 Chat Completions、JSON Mode
+- 数据与校验：Pydantic、JSONL
+- 检索：本地关键词匹配，仅使用 `fact/evidence`
+- 测试：Pytest、FastAPI TestClient
+- 版本管理：Git、GitHub
+
+## 项目目录
+
+- `src/shopping_agent/agent/`：结构化 Schema、提示词、百炼适配和工作流编排
 - `src/shopping_agent/api/`：FastAPI 入口、健康检查和推荐接口
-- `src/shopping_agent/search/`、`scoring/`：Day 1 的确定性搜索与排序
+- `src/shopping_agent/search/`、`scoring/`：确定性搜索、评分和 nearest 逻辑
 - `src/shopping_agent/retrieval/`：本地可信证据检索
 - `data/`：10 款 mock SKU、30 条文档及 JSON Schema
 - `web/index.html`：调用真实后端接口的单文件前端
-- `scripts/`：数据质检、搜索演示、Schema 生成和真实模型冒烟脚本
-- `tests/`：确定性核心、数据和 Day 3 API/Agent 测试
+- `scripts/`：数据质检、搜索演示、Schema 生成和真实百炼冒烟脚本
+- `tests/`：数据、确定性核心、API 和 Agent 测试
 
 ## 本地安装
 
@@ -36,29 +65,32 @@ py -3.12 -m venv .venv
 Copy-Item .env.example .env
 ```
 
-编辑 `.env`，填入自己的服务端密钥：
+## 环境变量
+
+前往阿里云百炼控制台创建中国大陆（北京）地域 API Key，然后编辑本地 `.env`：
 
 ```dotenv
-OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-5-mini
+BAILIAN_API_KEY=your_bailian_api_key_here
+AI_MODEL=qwen-plus
+BAILIAN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 APP_ENV=development
 ```
 
-`.env` 已被 Git 忽略。不要把真实密钥写入 HTML、提交到仓库或粘贴到日志中。
+API Key、地域和 Base URL 必须匹配。`.env` 已被 Git 忽略，不要把真实密钥写进 HTML、README、测试、日志或 GitHub。
 
-## 启动与使用
+## 启动方式
 
 ```powershell
 .venv\Scripts\python -m uvicorn shopping_agent.api.main:app --host 127.0.0.1 --port 8000
 ```
 
-浏览器打开 `http://127.0.0.1:8000/`。也可以检查：
+浏览器打开 <http://127.0.0.1:8000/>。健康检查：
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/api/health
 ```
 
-`ai_enabled=false` 表示未配置密钥；此时页面可打开，但 `/api/recommend` 会返回明确的 503 配置提示，不会伪造推荐。
+`ai_enabled=false` 表示未配置有效的百炼密钥；此时 `/api/recommend` 返回清晰的 503 配置提示，不会伪造推荐。
 
 ## 测试和演示
 
@@ -68,17 +100,15 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 .venv\Scripts\python scripts/demo_search.py
 ```
 
-真实 OpenAI 冒烟测试与 mock 单元测试分开运行，并会产生 API 用量：
+真实百炼冒烟测试与默认 mock 单元测试分开运行，执行时会产生 API 用量：
 
 ```powershell
-.venv\Scripts\python scripts/smoke_openai.py
+.venv\Scripts\python scripts/smoke_bailian.py
 ```
 
-脚本未检测到 `OPENAI_API_KEY` 时会直接退出并提示配置，不会把 mock 结果标记为真实调用。
+## API 示例
 
-## API
-
-`POST /api/recommend` 请求示例：
+`POST /api/recommend`：
 
 ```json
 {
@@ -93,37 +123,34 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 }
 ```
 
-响应会包含结构化需求、`normal` 或 `nearest` 模式、固定候选排序、约束满足/违反项、证据 ID、证据内容和 mock 数据声明。
+响应包含结构化需求、`normal` 或 `nearest` 模式、固定候选排名、约束满足/违反项、证据和 mock 数据声明。
 
-## Render 部署
+## 部署说明
 
-仓库根目录已提供 `render.yaml`：
+代码和产品文档已上传 GitHub。仓库根目录提供 `render.yaml`，用于让支持 Python 服务的部署平台从 GitHub 构建 FastAPI 应用。部署环境需要设置：
 
-1. 在 GitHub 网页新建一个空仓库，不要勾选自动创建 README、License 或 `.gitignore`。
-2. 将本地提交推送到 GitHub（不要提交 `.env`）：
+- `BAILIAN_API_KEY`
+- `AI_MODEL=qwen-plus`
+- `BAILIAN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1`
+- `APP_ENV=production`
 
-```powershell
-git branch -M main
-git remote add origin https://github.com/<你的用户名>/<仓库名>.git
-git push -u origin main
+构建命令：
+
+```text
+pip install -e .
 ```
 
-如果已经存在名为 `origin` 的远程地址，先用 `git remote -v` 核对，不要重复添加或覆盖不明地址。
-
-3. 在 Render 选择 **New > Blueprint**，连接该仓库。
-4. 在服务环境变量中设置 `OPENAI_API_KEY`；`OPENAI_MODEL` 默认是 `gpt-5-mini`。
-5. 部署后访问 `/api/health`，确认 `status=ok`、`ai_enabled=true`。
-6. 在网页完成至少一次 normal 查询和一次冲突约束 nearest 查询。
-
-若不使用 Blueprint，构建命令为 `pip install -e .`，启动命令为：
+启动命令：
 
 ```text
 uvicorn shopping_agent.api.main:app --host 0.0.0.0 --port $PORT
 ```
 
+GitHub Pages 只能托管静态页面，不能运行本项目的 Python/FastAPI 后端。
+
 ## 当前边界
 
 - 没有真实电商抓取、向量数据库、图片解析或实时价格。
-- 图片入口只说明 P1 能力尚未开放，不会伪装成已识图。
-- 模型仅提取与表述；商品候选、过滤、排序和 nearest 计算均来自确定性代码。
-- 未配置真实 API 密钥时，无法完成真实模型端到端冒烟和公开可用部署。
+- 图片入口只说明 P1 尚未开放，不会把模拟结果伪装成真实识图。
+- 商品、文档和价格均为课程演示数据。
+- 在线应用链接和真实结果截图将在百炼 Key 与后端部署完成后补充。

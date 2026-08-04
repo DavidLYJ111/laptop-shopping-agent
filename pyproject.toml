@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "laptop-shopping-agent"
 version = "0.1.0"
-description = "Deterministic product search core for a laptop shopping agent"
+description = "Qwen-powered laptop shopping agent with deterministic search and local RAG"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

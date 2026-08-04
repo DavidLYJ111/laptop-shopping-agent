@@ -1,11 +1,12 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from shopping_agent.agent.openai_provider import AIServiceError, OpenAIProvider
+from shopping_agent.agent.bailian_provider import AIServiceError, BailianProvider
 from shopping_agent.agent.schemas import (
     ExtractedConstraint,
     ExtractedPreference,
@@ -55,7 +56,7 @@ class FakeProvider:
     def parse_structured(self, *, system_prompt, user_input, schema):
         self.calls.append(schema.__name__)
         if self.always_fail:
-            raise AIServiceError("OpenAI API 调用失败，请检查网络、模型权限或服务状态。")
+            raise AIServiceError("百炼千问 API 调用失败，请检查网络、模型权限或服务状态。")
         if schema is IntentResult:
             return self.intent
         context = json.loads(user_input.split("\n上次", maxsplit=1)[0])
@@ -190,25 +191,54 @@ def test_derived_documents_are_excluded_from_retrieval():
     assert not ({item.evidence_id for item in evidence} & derived_ids)
 
 
-def test_openai_failure_is_readable_and_does_not_expose_key():
+def test_bailian_failure_is_readable_and_does_not_expose_key():
     secret = "test-api-key-not-a-real-secret"
 
-    class FailingResponses:
-        def parse(self, **kwargs):
+    class FailingCompletions:
+        def create(self, **kwargs):
             raise RuntimeError(f"upstream failure using {secret}")
 
-    class Client:
-        responses = FailingResponses()
+    class Chat:
+        completions = FailingCompletions()
 
-    provider = OpenAIProvider(Settings(openai_api_key=secret), client=Client())
+    class Client:
+        chat = Chat()
+
+    provider = BailianProvider(Settings(bailian_api_key=secret), client=Client())
     with pytest.raises(AIServiceError) as exc:
         provider.parse_structured(system_prompt="system", user_input="user", schema=IntentResult)
-    assert "OpenAI API 调用失败" in str(exc.value)
+    assert "百炼千问 API 调用失败" in str(exc.value)
     assert secret not in str(exc.value)
 
 
+def test_bailian_provider_uses_json_mode_and_validates_schema():
+    captured = {}
+
+    class Completions:
+        def create(self, **kwargs):
+            captured.update(kwargs)
+            content = make_intent().model_dump_json()
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+            )
+
+    client = SimpleNamespace(chat=SimpleNamespace(completions=Completions()))
+    provider = BailianProvider(Settings(bailian_api_key="test-key"), client=client)
+    result = provider.parse_structured(
+        system_prompt="你是测试助手。",
+        user_input="请解析购买需求。",
+        schema=IntentResult,
+    )
+
+    assert result.intent == IntentType.PURCHASE
+    assert captured["model"] == "qwen-plus"
+    assert captured["response_format"] == {"type": "json_object"}
+    assert captured["extra_body"] == {"enable_thinking": False}
+    assert "JSON Schema" in captured["messages"][1]["content"]
+
+
 def test_health_reports_ai_disabled_without_key(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BAILIAN_API_KEY", raising=False)
     client = TestClient(app)
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -218,12 +248,12 @@ def test_health_reports_ai_disabled_without_key(monkeypatch):
 
 
 def test_missing_api_key_returns_clear_503(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("BAILIAN_API_KEY", raising=False)
     get_agent_service.cache_clear()
     client = TestClient(app)
     response = client.post("/api/recommend", json={"message": "推荐一台编程笔记本"})
     assert response.status_code == 503
-    assert "OPENAI_API_KEY" in response.json()["detail"]
+    assert "BAILIAN_API_KEY" in response.json()["detail"]
 
 
 def test_api_recommend_with_mocked_service(service_factory):
