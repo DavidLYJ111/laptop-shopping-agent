@@ -238,7 +238,7 @@ def test_bailian_provider_uses_json_mode_and_validates_schema():
 
 
 def test_health_reports_ai_disabled_without_key(monkeypatch):
-    monkeypatch.delenv("BAILIAN_API_KEY", raising=False)
+    monkeypatch.setenv("BAILIAN_API_KEY", "")
     client = TestClient(app)
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -248,7 +248,7 @@ def test_health_reports_ai_disabled_without_key(monkeypatch):
 
 
 def test_missing_api_key_returns_clear_503(monkeypatch):
-    monkeypatch.delenv("BAILIAN_API_KEY", raising=False)
+    monkeypatch.setenv("BAILIAN_API_KEY", "")
     get_agent_service.cache_clear()
     client = TestClient(app)
     response = client.post("/api/recommend", json={"message": "推荐一台编程笔记本"})

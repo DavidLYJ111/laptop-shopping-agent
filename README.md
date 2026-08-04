@@ -13,6 +13,26 @@
 - GitHub 项目与在线文档：<https://github.com/DavidLYJ111/laptop-shopping-agent>
 - 在线应用：后端部署完成后补充
 
+## 产品截图与功能说明
+
+### 1. 自然语言需求与结构化表单
+
+![AI 服务已连接的需求输入页](docs/screenshots/01_input_ai_connected.png)
+
+页面显示“真实 AI 接口已连接”。用户可以输入自然语言，并补充预算、最低内存、使用场景、重量和显卡要求；表单中的明确条件优先于模型推断，“希望轻便”等模糊表达只保留为软偏好。
+
+### 2. normal 模式推荐结果
+
+![normal 模式推荐结果](docs/screenshots/02_normal_recommendation.png)
+
+系统先由千问提取结构化需求，再由确定性搜索引擎筛选完全满足硬约束的商品。页面展示固定排名、商品参数、匹配需求、取舍说明和检索证据；模型只能解释搜索结果，不能新增商品或修改排名。
+
+### 3. nearest 模式冲突分析
+
+![nearest 模式冲突分析](docs/screenshots/03_nearest_conflict.png)
+
+当预算、重量和显卡要求无法同时满足时，系统不会伪造完全匹配结果，而是进入 nearest 模式，明确显示“非完全符合”、冲突原因、可放宽约束和最多两款最接近候选。
+
 ## 核心使用流程
 
 1. 用户输入自然语言需求，也可以填写预算、内存、场景和重量等表单条件。
@@ -99,6 +119,8 @@ Invoke-RestMethod http://127.0.0.1:8000/api/health
 .venv\Scripts\python scripts/check_data_quality.py
 .venv\Scripts\python scripts/demo_search.py
 ```
+
+当前自动化测试结果：`33 passed`。默认 pytest 使用模拟模型客户端，不会读取真实 API Key 或产生模型费用。
 
 真实百炼冒烟测试与默认 mock 单元测试分开运行，执行时会产生 API 用量：
 

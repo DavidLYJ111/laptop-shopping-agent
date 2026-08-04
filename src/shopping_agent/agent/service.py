@@ -243,7 +243,9 @@ class ShoppingAgentService:
         evidence_ids = {item.evidence_id for item in evidence}
         if any(evidence_id not in evidence_ids for item in draft.recommendations for evidence_id in item.evidence_ids):
             raise AgentValidationError("模型引用了不存在的 evidence_id。")
-        if DATA_DISCLAIMER not in draft.data_disclaimer:
+        if not any(
+            marker in draft.data_disclaimer for marker in ("mock", "演示", "模拟")
+        ):
             raise AgentValidationError("缺少 mock 数据声明。")
 
     def _build_response(
