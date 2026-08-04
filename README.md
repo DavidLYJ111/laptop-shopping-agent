@@ -11,7 +11,7 @@
 ## 在线地址
 
 - GitHub 项目与在线文档：<https://github.com/DavidLYJ111/laptop-shopping-agent>
-- 在线应用：Vercel 部署完成后补充
+- 在线应用：<https://laptop-shopping-agent-ku1u.vercel.app>
 
 ## 产品截图与功能说明
 
